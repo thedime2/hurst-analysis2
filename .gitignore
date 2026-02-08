@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Data artifacts (keep raw CSVs tracked if intentional)
+data/processed/
