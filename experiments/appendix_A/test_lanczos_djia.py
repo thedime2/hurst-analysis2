@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 
 from src.spectral.lanczos import lanczos_spectrum
+from src.spectral.peak_detection import find_spectral_peaks, find_spectral_troughs
+from src.spectral.envelopes import fit_upper_envelope, fit_lower_envelope, envelope_model
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(script_dir, '../../data/raw/^dji_w.csv')
@@ -21,24 +23,49 @@ df2 = df[df.Date.between('1921-04-29','1965-05-21')] # discord dates  29-04-1921
 
 [w,wRad,cosprt,sinprt,amp,phRad,phGrad] = lanczos_spectrum(df2.Close.values, dataspacing, datapointsperyr)
 
-ktop = 0.1875 # slope of upper line
-kbot = 0.0575 # slope of lower line
-
 # Convert to radians/year
 omega_yr = w * 52  # w is rad/week → *52 = rad/year
-upper_peak_amp_line = wRad[:]*ktop
-lower_peak_amp_line = wRad[:]*kbot
+
+# Detect peaks and troughs in the spectrum
+peak_idx, peak_freq, peak_amp = find_spectral_peaks(amp, omega_yr, min_distance=3)
+trough_idx, trough_freq, trough_amp = find_spectral_troughs(amp, omega_yr, min_distance=3)
+
+print(f"Detected {len(peak_idx)} peaks and {len(trough_idx)} troughs")
+
+# Fit envelopes to peaks and troughs
+upper_fit = fit_upper_envelope(peak_freq, peak_amp)
+lower_fit = fit_lower_envelope(trough_freq, trough_amp)
+
+print(f"\nUpper envelope: a(ω) = {upper_fit['k']:.4f} / ω")
+print(f"  R² = {upper_fit['r_squared']:.4f}")
+print(f"  RMSE = {upper_fit['rmse']:.4f}")
+
+print(f"\nLower envelope: a(ω) = {lower_fit['k']:.4f} / ω")
+print(f"  R² = {lower_fit['r_squared']:.4f}")
+print(f"  RMSE = {lower_fit['rmse']:.4f}")
+
+# Hardcoded values from original script (for comparison)
+# ktop = 0.1875  # original hardcoded upper slope
+# kbot = 0.0575  # original hardcoded lower slope
+
+# Generate envelope lines using fitted parameters
+upper_peak_amp_line = envelope_model(wRad[:], upper_fit['k'])
+lower_peak_amp_line = envelope_model(wRad[:], lower_fit['k'])
 
 
 # Plot amplitude vs. omega (rad/yr)
 plt.figure(figsize=(10, 6))
-plt.plot(omega_yr[:], amp[:], 'b.-', markersize=4)  # 
-plt.plot(omega_yr[:], upper_peak_amp_line[:], '-', markersize=4)  # 
-plt.plot(omega_yr[:], lower_peak_amp_line[:], '-', markersize=4)  # 
+plt.plot(omega_yr[:], amp[:], 'b.-', markersize=4, label='Spectrum')
+plt.plot(omega_yr[:], upper_peak_amp_line[:], 'r-', linewidth=2,
+         label=f'Upper envelope: k={upper_fit["k"]:.4f}')
+plt.plot(omega_yr[:], lower_peak_amp_line[:], 'g-', linewidth=2,
+         label=f'Lower envelope: k={lower_fit["k"]:.4f}')
+plt.plot(peak_freq, peak_amp, 'ro', markersize=6, alpha=0.6, label='Detected peaks')
+plt.plot(trough_freq, trough_amp, 'go', markersize=6, alpha=0.6, label='Detected troughs')
+
 plt.xscale('linear')
 plt.yscale('log')
 
-#plt.ticklabel_format(style='plain', axis='y', useOffset=False)
 plt.xlim(-0.1, 22)  # Hurst shows up to ~10 rad/yr
 plt.ylim(0.45, 90)  # Hurst shows up from 0 to 80 amplitude
 
@@ -58,21 +85,25 @@ plt.xticks(minor=True)
 
 plt.xlabel("Angular Frequency ω (radians per year)")
 plt.ylabel("Amplitude (log scaled price)")
-plt.title("Lanczos Spectrum – DJIA 1921–1965 (Hurst Window)")
+plt.title("Lanczos Spectrum – DJIA 1921–1965 (Hurst Window)\nwith Fitted Envelopes")
+plt.legend(loc='upper right', fontsize=9)
 plt.grid(True)
 
 
-# same plot frequencys high to low in points not radians
-plt.figure()
-plt.plot(wRad[:],amp[:])
-plt.plot(wRad[:],wRad[:]*ktop,linestyle='--')
-plt.plot(wRad[:],wRad[:]*kbot,linestyle='--')
-#plt.plot((2*np.pi) / wRad[1:-1],amp[1:-1]);
+# Same plot with frequency as period (high to low frequency = low to high period)
+plt.figure(figsize=(10, 6))
+plt.plot(wRad[:],amp[:], 'b.-', markersize=4, label='Spectrum')
+plt.plot(wRad[:], upper_peak_amp_line[:], 'r-', linewidth=2,
+         label=f'Upper envelope')
+plt.plot(wRad[:], lower_peak_amp_line[:], 'g-', linewidth=2,
+         label=f'Lower envelope')
 plt.grid(True)
+plt.legend()
 
-# plt.ticklabel_format(style='plain', axis='y', useOffset=False)
 ax = plt.gca()
 ax.yaxis.set_minor_formatter(mticker.ScalarFormatter())
-plt.title('Fourier DJIA plotted as points and amplitude high frequency to low frequency')
+plt.xlabel('Period (years)')
+plt.ylabel('Amplitude')
+plt.title('Fourier-Lanczos Spectrum (Period Domain)\nDJIA 1921-1965')
 plt.show()
 
