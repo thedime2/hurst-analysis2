@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python phase1_complete.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dir:*)"
     ]
   }
 }

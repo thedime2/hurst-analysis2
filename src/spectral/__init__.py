@@ -1,5 +1,6 @@
 """
-Spectral analysis modules including Lanczos spectrum, peak detection, and envelope fitting.
+Spectral analysis modules including Lanczos spectrum, peak detection,
+envelope fitting, and frequency measurement.
 """
 
 from .lanczos import lanczos_spectrum, nextpow2, nextpow2b
@@ -17,6 +18,11 @@ from .envelopes import (
     compute_fit_quality,
     fit_dual_envelope
 )
+from .frequency_measurement import (
+    measure_freq_at_peaks,
+    measure_freq_at_troughs,
+    measure_freq_at_zero_crossings
+)
 
 __all__ = [
     'lanczos_spectrum',
@@ -31,5 +37,8 @@ __all__ = [
     'fit_lower_envelope',
     'envelope_model',
     'compute_fit_quality',
-    'fit_dual_envelope'
+    'fit_dual_envelope',
+    'measure_freq_at_peaks',
+    'measure_freq_at_troughs',
+    'measure_freq_at_zero_crossings'
 ]

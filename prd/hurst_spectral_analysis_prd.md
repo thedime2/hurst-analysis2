@@ -81,32 +81,42 @@ the raw price series as loaded.
 
 ## 5. Phase Breakdown
 
-### Phase 1 — Fourier–Lanczos Spectral Ground Truth
+### Phase 1 — Fourier–Lanczos Spectral Ground Truth ✅ COMPLETE
 
 **Goal:** Reproduce Appendix A, Figure AI-1
 
+**Status:** Complete (2026-02-09)
+
 Tasks:
-- Load DJIA weekly data
-- Compute Fourier–Lanczos spectrum
-- Express frequency in radians per year
-- Identify:
-  - Broad spectral lobes
-  - Fine frequency structure
-- Fit peak-to-peak envelope:
-  - \( a(\omega) = k / \omega \)
+- ✅ Load DJIA weekly data (2298 samples, 1921–1965)
+- ✅ Compute Fourier–Lanczos spectrum
+- ✅ Express frequency in radians per year
+- ✅ Identify broad spectral lobes and fine frequency structure
+- ✅ Fit peak-to-peak envelope: a(w) = k / w
 
 Deliverables:
-- Fourier spectrum plot
-- Peak and trough frequency lists
-- Envelope fit parameters
+- ✅ `figure_AI1_reproduction.png` — Fourier spectrum with fitted envelopes
+- ✅ `data/processed/phase1_results.txt` — Peak/trough frequency lists
+- ✅ Envelope fit parameters (upper k=53.96, R²=0.959; lower k=24.40, R²=0.925)
 
-## Replication Note: Lanczos Spectrum Data Length and Frequency Resolution
+Key results:
+- 11 major peaks, 10 troughs detected (min_distance=6, prominence=1.2)
+- Upper/lower envelope ratio: 2.21
+- Frequency resolution: 0.14 rad/year (full 44-year record)
+
+Implementation:
+- `src/spectral/lanczos.py` — Core Fourier–Lanczos spectrum
+- `src/spectral/peak_detection.py` — Peak/trough detection with scipy.signal
+- `src/spectral/envelopes.py` — Power-law envelope fitting (log-log regression)
+- `experiments/appendix_A/phase1_complete.py` — Reproducible pipeline
+
+### Replication Note: Lanczos Spectrum Data Length and Frequency Resolution
 
 During replication of Appendix A (Figure AI-1), an inconsistency was identified
 between the textual description in *The Profit Magic of Stock Transaction Timing*
 and the empirical requirements of the plotted Fourier–Lanczos spectrum.
 
-Hurst states that the analysis used “2229 data points” providing a frequency
+Hurst states that the analysis used "2229 data points" providing a frequency
 resolution of **0.568 radians per year**. However, when applied to weekly DJIA
 data spanning **29 April 1921 through mid-1965** (~44 years, ~2297–2299 samples),
 the theoretical frequency resolution is:
@@ -127,7 +137,7 @@ must have been computed over the **full ~44-year DJIA record**. The stated
 resolution value is therefore interpreted as an **editorial or explanatory
 error**, rather than a methodological one.
 
-Importantly, this discrepancy does not invalidate Hurst’s conclusions. The fine
+Importantly, this discrepancy does not invalidate Hurst's conclusions. The fine
 spectral structure and minimum line spacing are not inferred from discrete
 Fourier bin spacing alone, but from envelope curvature, regular trough spacing,
 and subsequent validation using overlapping comb filter banks. These methods
@@ -136,52 +146,86 @@ data.
 
 Accordingly, this project treats the Appendix A Fourier–Lanczos spectrum as a
 **full-record analysis**, consistent with signal-processing theory and with
-Hurst’s downstream results in Appendix A and Appendix B.
+Hurst's downstream results in Appendix A and Appendix B.
 
 
 ---
 
-### Phase 2 — Overlapping Comb Filter Analysis
+### Phase 2 — Overlapping Comb Filter Analysis ✅ COMPLETE
 
-**Goal:** Reproduce Figures AI-2 through AI-5
+**Goal:** Reproduce Figures AI-2 through AI-4
+
+**Status:** Complete (2026-02-09)
 
 Tasks:
-- Implement Ormsby band-pass filters (real and complex)
-- Construct overlapping combs with uniform frequency spacing
-- Apply filters to DJIA data
-- Extract instantaneous frequency vs time
-- Identify frequency clustering and gaps
-- Shade modulation sidebands
+- ✅ Implement Ormsby band-pass filters (real and complex, modulate method)
+- ✅ Construct 23 overlapping combs with uniform 0.2 rad/yr spacing
+- ✅ Apply filters to DJIA data (7.6–12.0 rad/yr, nw=1999)
+- ✅ Extract instantaneous frequency vs time (peaks, troughs, zero crossings)
+- ✅ Identify frequency clustering and gaps
 
 Deliverables:
-- Filter bank definitions
-- Time-domain filter outputs
-- Frequency-vs-time plots
-- Sideband grouping visualizations
+- ✅ `figure_AI2_reproduction.png` — Idealized + actual comb filter response
+- ✅ `figure_AI3_reproduction.png` — Comb filter time-domain outputs with envelopes
+- ✅ `figure_AI4_peaks.png` — Frequency vs time (peak-to-peak period method)
+- ✅ `data/processed/phase2_results.txt` — Filter specs, envelope amplitudes, freq measurements
+
+Key results:
+- 23 filters, centers 7.6–12.0 rad/yr (periods 27–43 weeks)
+- Passband 0.2 rad/yr, skirt 0.3 rad/yr, step 0.2 rad/yr
+- Complex analytic filters with modulate method
+- Clear frequency separation visible in AI-4 reproduction
+
+Implementation:
+- `src/filters/funcOrmsby.py` — Real and complex Ormsby filter kernels
+- `src/filters/funcDesignFilterBank.py` — Hurst comb bank design, filter application
+- `experiments/appendix_A/phase2_figure_AI2.py` — Reproducible pipeline
 
 ---
 
-### Phase 3 — Line Spectrum and Nominal Model Derivation
+### Phase 3 — Line Spectrum and Nominal Model Derivation ✅ COMPLETE
 
-**Goal:** Reproduce Figure AI-6 and nominal spacing derivation
+**Goal:** Reproduce Figures AI-5, AI-6 and derive nominal spacing
+
+**Status:** Complete (2026-02-09)
 
 Tasks:
-- Aggregate frequency-vs-time data across filters
-- Perform least-squares line fitting
-- Estimate minimum line spacing
-- Compare with Fourier fine structure
-- Reconstruct nominal period hierarchy
+- ✅ Group comb filter traces into 6 line families (KMeans clustering)
+- ✅ Compute modulation sideband envelopes for each line family
+- ✅ Design medium-frequency comb bank (15 filters, 3.5–7.8 rad/yr)
+- ✅ Apply LSE smoothing (median + Savitzky-Golay) to all frequency traces
+- ✅ Aggregate frequency data across three bands (HF comb, MF comb, Fourier)
+- ✅ Identify and merge 27 distinct nominal line frequencies
+- ✅ Compute line spacings and compare with Fourier fine structure
+- ✅ Build nominal period hierarchy table
 
 Deliverables:
-- Line spacing vs index plot
-- Derived nominal periods
-- Comparison with Hurst’s published tables
+- ✅ `figure_AI5_reproduction.png` — Modulation sidebands (6 line families)
+- ✅ `figure_AI6_reproduction.png` — LSE frequency vs time analysis (27 lines)
+- ✅ `data/processed/phase3_results.txt` — Full nominal model, spacings, validation
+- ✅ `data/processed/nominal_model.csv` — Machine-readable period hierarchy
+
+Key results:
+- **Mean line spacing: 0.3719 rad/yr** (Hurst: 0.3676, delta = 1.2%)
+- 27 nominal lines from 2.28–11.95 rad/yr (periods 27–144 weeks)
+- 6 HF line frequencies match Hurst's AI-5 within 0.0–0.3 rad/yr
+- 67% of nominal lines match Phase 1 Fourier peaks
+- Three-band approach: HF comb (7.6–12), MF comb (3.5–7.8), Fourier (<3.5)
+
+Implementation:
+- `src/spectral/frequency_measurement.py` — Peak/trough/zero-crossing freq measurement
+- `src/nominal_model/sideband_analysis.py` — Line grouping and sideband envelopes
+- `src/nominal_model/lse_smoothing.py` — Robust frequency trace smoothing
+- `src/nominal_model/derivation.py` — Line identification, spacing, nominal model
+- `experiments/appendix_A/phase3_nominal_model.py` — Reproducible pipeline
 
 ---
 
 ### Phase 4 — Page 152 Filter Decomposition
 
 **Goal:** Reproduce the six-filter structural decomposition
+
+**Status:** Not started
 
 Tasks:
 - Reconstruct low-pass and band-pass filters from page 152
@@ -198,7 +242,9 @@ Deliverables:
 
 ### Phase 5 — Modern Extensions
 
-**Goal:** Test and extend Hurst’s assumptions
+**Goal:** Test and extend Hurst's assumptions
+
+**Status:** Not started
 
 Tasks:
 - Compute CMW scalograms
@@ -216,20 +262,27 @@ Deliverables:
 
 ## 6. Key Hypotheses to Test
 
-1. Market spectra consist of discrete, slowly drifting lines
-2. Fourier fine structure reflects time-averaged drift
-3. “Meaningless” frequencies arise from beating or filter mismatch
-4. Nominal model periods emerge from stable line spacing
-5. Envelope behavior is driven by multi-line interference
+1. ✅ **Market spectra consist of discrete, slowly drifting lines** —
+   Confirmed: 27 quasi-horizontal lines identified in LSE frequency-vs-time
+   analysis (Figure AI-6). Lines show excellent stability over ~275 weeks.
+2. ⬜ Fourier fine structure reflects time-averaged drift — Partially addressed:
+   mean line spacing (0.3719 rad/yr) matches Hurst's fine structure (0.3676)
+   within 1.2%. Full drift analysis deferred to Phase 5.
+3. ⬜ "Meaningless" frequencies arise from beating or filter mismatch — Not yet
+   tested systematically. Some unmatched nominal lines may correspond to these.
+4. ✅ **Nominal model periods emerge from stable line spacing** — Confirmed:
+   mean spacing 0.3719 rad/yr with 27 lines spanning 2.28–11.95 rad/yr.
+5. ⬜ Envelope behavior is driven by multi-line interference — Deferred to
+   Phase 5 (CMW, ridge detection).
 
 ---
 
 ## 7. Success Criteria
 
-- Visual and numerical agreement with Hurst’s figures
-- Reproducible derivation of nominal spacing
-- Clear explanation of page 152 filter choices
-- Demonstrated transferability (or limits) to modern data
+- ✅ Visual and numerical agreement with Hurst's figures (AI-1 through AI-6)
+- ✅ Reproducible derivation of nominal spacing (0.3719 vs 0.3676 rad/yr)
+- ⬜ Clear explanation of page 152 filter choices (Phase 4)
+- ⬜ Demonstrated transferability (or limits) to modern data (Phase 5)
 
 ---
 
