@@ -1,0 +1,101 @@
+# Bandpass Filter Tuning PRD
+
+## 1. Purpose
+This document defines a focused diagnostic and tuning plan for the Phase 2
+Ormsby bandpass comb filters, with emphasis on:
+- Passband width vs. expected design
+- Envelope smoothness and wobble sources
+- Frequency-vs-time trace stability
+
+This is a supplementary PRD. It does not change Phase 1/3 deliverables.
+
+## 2. Scope
+In scope
+- Phase 2 comb filters (AI-2 to AI-4)
+- Filter kernel design and response diagnostics
+- Envelope behavior characterization
+- Parametric cross-checks (MPM/Prony/ESPRIT) as validation only
+
+Out of scope
+- New trading logic
+- Rewriting Phase 1/3 pipelines
+- Major refactors of core library modules
+
+## 3. Current Observations
+- Comb filter kernels are long (NW=1999), which tends to narrow peaks.
+- Modulate-method analytic BP construction may round shoulders vs. idealized
+  trapezoids, affecting apparent width.
+- Envelope wobble is expected if multiple close lines exist within a passband.
+
+## 4. Hypotheses
+H1: Narrow peaks are caused by long kernels (NW) and/or modulate construction,
+    not by a lack of weights.
+H2: Envelope wobble is primarily multi-line beating within each passband, not
+    filter instability.
+H3: Frequency-vs-time jitter is amplified by raw peak detection and can be
+    reduced with light gating or smoothing without altering true lines.
+
+## 5. Diagnostics (No Code Changes Required)
+D1. Single-tone sanity test
+- Filter a single sinusoid at each filter center frequency.
+- Expect near-constant envelope; any wobble indicates filter design issues.
+
+D2. Two-tone beat test
+- Filter two sinusoids spaced by ~0.2 to 0.4 rad/yr.
+- Envelope beat period should match expected 2*pi / delta_omega.
+
+D3. Measure actual bandwidth
+- Compute -3 dB or -6 dB widths from FFT response and compare with
+  w2-w3 and w1-w4 targets.
+
+D4. Sum response ripple
+- Verify composite gain across the comb bank is near unity
+  in the target band (7.6 to 12.0 rad/yr).
+
+## 6. Tuning Experiments (Minimal Changes)
+E1. Vary NW
+- Test NW in {799, 1199, 1599, 1999, 2599}.
+- Measure bandwidth, ripple, and envelope smoothness.
+
+E2. Adjust skirt/passband widths
+- Test passband_width in {0.2, 0.3} and skirt_width in {0.3, 0.4}.
+- Compare peak broadening vs. leakage.
+
+E3. Compare BP construction methods
+- Compare modulate vs subtract for analytic BP.
+- Expect more exact trapezoid shape with subtract; expect smoother
+  phase with modulate.
+
+E4. Envelope smoothing (display only)
+- Apply light median or Savitzky-Golay smoothing to envelope for plots
+  without altering measurements.
+
+## 7. Parametric Cross-Checks
+P1. Matrix Pencil Method (MPM)
+- Use short sliding windows (e.g., 104 to 156 weeks).
+- Estimate dominant lines and compare to comb bank medians.
+
+P2. Prony / Kumaresan-Tufts
+- Apply to same windows and compare line stability.
+
+P3. ESPRIT or MUSIC
+- Use as a sensitivity check for closely spaced lines.
+
+## 8. Acceptance Criteria
+- Measured passband width within +/-10% of target (w3-w2).
+- Composite gain ripple within +/-1.5 dB across 7.6 to 12.0 rad/yr.
+- Single-tone envelope variance below 5% of mean amplitude.
+- Two-tone envelope wobble matches expected beat period within 10%.
+- Parametric line estimates agree with comb medians within 0.1 to 0.2 rad/yr.
+
+## 9. Deliverables
+- Short diagnostic report (1-2 pages) with:
+  - Bandwidth and ripple tables
+  - Example envelope plots (single-tone and two-tone)
+  - Summary of optimal NW and width settings
+- Optional appendix: parametric method comparisons
+
+## 10. Notes
+- All experiments use DJIA weekly data (1921-04-29 to 1965-05-21) unless
+  a synthetic test is specified.
+- Do not change Phase 1/3 reproduction outputs as part of this work.

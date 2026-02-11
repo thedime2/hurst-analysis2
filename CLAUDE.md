@@ -72,13 +72,21 @@ hurst-analysis2/
 │   │
 │   ├── filters/       # Ormsby filters, comb banks (Phase 2)
 │   ├── nominal_model/ # Nominal Model derivation (Phase 3)
-│   ├── time_frequency/ # CMW, ridges (Phase 5)
+│   ├── time_frequency/ # CMW freq-domain FWHM design (Phase 5)
+│   │   └── cmw.py             # ormsby_spec_to_cmw_params, apply_cmw, apply_cmw_bank
 │   └── visualization/ # Plotting utilities
 │
 ├── experiments/
-│   └── appendix_A/    # Reproduction scripts for Appendix A figures
-│       ├── test_lanczos_djia.py    # Basic spectrum test
-│       └── phase1_complete.py      # Phase 1 deliverables
+│   ├── appendix_A/    # Reproduction scripts for Appendix A figures
+│   │   ├── test_lanczos_djia.py    # Basic spectrum test
+│   │   ├── phase1_complete.py      # Phase 1 deliverables
+│   │   └── compare_comb_ormsby_vs_cmw.py  # Comb bank CMW comparison
+│   ├── page_45/       # Page 45 Figures II-9/II-10
+│   │   ├── reproduce_II9_II10.py          # Ormsby modulate vs subtract
+│   │   └── compare_ormsby_vs_cmw.py       # Ormsby vs CMW comparison
+│   └── page_152/      # Page 152 six-filter decomposition
+│       ├── reproduce_decomposition.py     # 3 rendering modes
+│       └── compare_ormsby_vs_cmw.py       # Ormsby vs CMW comparison
 │
 ├── data/
 │   ├── raw/           # Cached CSV data from stooq
@@ -163,34 +171,22 @@ Located in [references/page_152/](references/page_152/)
 
 ## Project Phases
 
-### Phase 1: Fourier-Lanczos Spectral Ground Truth (IN PROGRESS)
+### Phase 1: Fourier-Lanczos Spectral Ground Truth (COMPLETE)
 **Goal**: Reproduce Appendix A, Figure AI-1
 
-**Tasks**:
-- ✅ Load DJIA weekly data
-- ✅ Compute Fourier-Lanczos spectrum
-- ✅ Express frequency in radians per year
-- 🔄 Identify broad spectral lobes and fine frequency structure
-- 🔄 Fit peak-to-peak envelope: a(ω) = k/ω
-
-**Deliverables**:
-- ✅ Fourier spectrum plot
-- 🔄 Peak and trough frequency lists
-- 🔄 Envelope fit parameters
-
-### Phase 2: Overlapping Comb Filter Analysis (NOT STARTED)
+### Phase 2: Overlapping Comb Filter Analysis (COMPLETE)
 **Goal**: Reproduce Figures AI-2 through AI-5
 
-**Tasks**: Implement Ormsby band-pass filters, construct overlapping combs, extract instantaneous frequency vs time
-
-### Phase 3: Line Spectrum and Nominal Model (NOT STARTED)
+### Phase 3: Line Spectrum and Nominal Model (COMPLETE)
 **Goal**: Reproduce Figure AI-6 and derive nominal spacing
 
-### Phase 4: Page 152 Filter Decomposition (NOT STARTED)
+### Phase 4: Page 45 & Page 152 Filter Reproduction (COMPLETE)
 **Goal**: Reproduce six-filter structural decomposition
 
-### Phase 5: Modern Extensions (NOT STARTED)
+### Phase 5: Modern Extensions (IN PROGRESS)
 **Goal**: CMW scalograms, ridge detection, hypothesis testing
+- ✅ CMW frequency-domain FWHM design (`src/time_frequency/cmw.py`)
+- ✅ Ormsby vs CMW comparisons for page 45, page 152, and comb bank
 
 ---
 

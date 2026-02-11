@@ -1,0 +1,134 @@
+Claude’s Plan
+Plan Page 45 (II-9, II-10) & Page 152 Six-Filter Reproduction
+Context
+Two reproduction tasks from Hurst's Profit Magic
+
+Page 45 Figures II-9 (Time-Persistence of Cyclicality) and II-10 (Principle of Variation at Work) — a single bandpass filter applied to DJIA, shown without and with amplitude envelopes. We compare modulate vs subtract bandpass construction to validate envelope extraction.
+Page 152 Six-filter structural decomposition — 1 lowpass + 5 bandpass filters decomposing DJIA into frequency bands. Three rendering modes real-valued, complex modulated with envelopes, complex subtract with envelopes.
+User-supplied filter specs (radyear) are initial estimates from visual inspection of Hurst's graphics. These are starting points for reproduction, not final values.
+
+Part 1 Page 45 — Figures II-9 & II-10
+Filter Specification
+Type Bandpass (Ormsby)
+Edges (radyear) w1=3.2, w2=3.55, w3=6.35, w4=6.70
+Center frequency (3.55 + 6.35)  2 = 4.95 radyr → period ≈ 1.27 years ≈ 66 weeks
+Passband width 6.35 - 3.55 = 2.80 radyr (wide passband)
+nw 359 × 5 = 1795 samples (≈ 34.5 years at fs=52)
+Data
+Weekly DJIA (dataraw^dji_w.csv), fs=52
+Filter over Full Hurst window 1921-04-29 to 1965-05-21 (use reflect mode to handle edges)
+Display window 1935-01-01 to 1954-02-01 (matches Figure II-9 x-axis)
+Plots (2 comparison figures)
+Plot 1 — Modulated bandpass with envelope
+
+Create filter ormsby_filter(nw=1795, f_edges=[3.2,3.55,6.35,6.70](2π), fs=52, filter_type='bp', method='modulate', analytic=True)
+Apply with apply_ormsby_filter(), mode='reflect'
+Show real part of filtered signal (dashed, like II-9) + ±envelope (solid, like II-10)
+Y-axis scaled to match Hurst's ±20 range
+Title Modulated Bandpass — method='modulate'
+Plot 2 — Subtract bandpass with envelope
+
+Same but method='subtract'
+Same layout for direct comparison
+Title LP-minus-LP Bandpass — method='subtract'
+Both plots on same figure (2 rows, 1 column) for side-by-side comparison. Date axis 1935–1954.
+
+Implementation Steps
+Load weekly DJIA, filter to Hurst window
+Convert filter edges from radyear to cyclesyear (÷ 2π) for ormsby_filter()
+Create modulated analytic kernel, apply, extract signal + envelope
+Create subtract analytic kernel, apply, extract signal + envelope
+Plot comparison figure, save PNG
+Part 2 Page 152 — Six-Filter Decomposition
+Filter Specifications (all in radyear)
+#	Type	w1	w2	w3	w4	Center (radyr)	Period (yr)	nw
+1	LP	—	—	0.85	1.25	—	5.0	1393
+2	BP	0.85	1.25	2.05	2.45	1.65	3.81	1393
+3	BP	3.20	3.55	6.35	6.70	4.95	1.27	1245
+4	BP	7.25	7.55	9.55	9.85	8.55	0.74	1745
+5	BP	13.65	13.95	19.35	19.65	16.65	0.38	1299
+6	BP	28.45	28.75	35.95	36.25	32.35	0.19	1299
+Note LP filter spec uses [0.85, 1.25] as [f_pass, f_stop] — passes everything below 0.85 radyr.
+Note nw values are per-filter as specified by user (not uniform).
+
+Data
+Weekly DJIA, fs=52
+Filter over Full Hurst window 1921-04-29 to 1965-05-21
+Display window 1935-01-01 to 1954-02-01 (same as page 45)
+nw Per-filter (see table above) 1393, 1393, 1245, 1745, 1299, 1299
+Plots (3 figures, each with 6 stacked subplots)
+Plot 1 — Real-valued filters (no envelopes)
+
+All 6 filters with analytic=False
+Method doesn't matter much for real filters; use method='modulate'
+6 vertically-stacked subplots, shared x-axis (date)
+Each subplot filtered signal, labeled with filter name and center frequency
+Top subplot original DJIA price or lowpass output
+Plot 2 — Complex modulated with envelopes
+
+Lowpass analytic=False (no envelope for LP)
+Bandpass 2–6 method='modulate', analytic=True
+Each BP subplot shows real part (filtered signal) + ±envelope curves
+Lowpass subplot just the filtered signal (no envelope)
+Plot 3 — Complex subtract with envelopes
+
+Same as Plot 2 but bandpass filters use method='subtract'
+Allows visual comparison of envelope quality between methods
+Implementation Steps
+Define filter specs as list of dicts matching create_filter_kernels() format
+LP {'type' 'lp', 'f_pass' 0.85, 'f_stop' 1.25, 'nw' 1393, 'index' 0}
+BP {'type' 'bp', 'f1' w1, 'f2' w2, 'f3' w3, 'f4' w4, 'nw' nw_i, 'index' i}
+Each filter uses its own nw from the spec table
+Load weekly DJIA, filter to Hurst window
+For each of 3 modes a. Create kernels via create_filter_kernels() (handling LP analytic=False separately) b. Apply via apply_filter_bank() or individual apply_ormsby_filter() calls c. Plot 6-panel stacked figure
+Save all 3 PNGs
+Handling LP in complex modes
+For plots 2 and 3, create kernels in two batches
+
+create_filter_kernels([lp_spec], fs=52, analytic=False) → 1 real kernel
+create_filter_kernels(bp_specs, fs=52, filter_type='modulate''subtract', analytic=True) → 5 complex kernels
+Combine into single list for apply_filter_bank()
+Files to Create
+1. experimentspage_45reproduce_II9_II10.py (NEW)
+Single self-contained script
+Loads data, applies filter both ways, generates comparison plot
+Saves experimentspage_45figure_II9_II10_comparison.png
+2. experimentspage_152reproduce_decomposition.py (NEW)
+Single self-contained script
+Defines 6 filter specs, applies in 3 modes, generates 3 stacked plots
+Saves
+experimentspage_152page152_real.png
+experimentspage_152page152_complex_modulate.png
+experimentspage_152page152_complex_subtract.png
+3. PRD update prdhurst_spectral_analysis_prd.md
+Add page 45 filter specs and figure references under Phase 4
+Add page 152 six-filter specs table (the user-estimated values)
+Note these are initial estimates subject to refinement
+No library changes needed
+create_filter_kernels() already handles 'lp' type at funcDesignFilterBank.py413-422
+ormsby_filter() supports all needed modes (lpbp, modulatesubtract, analytic)
+apply_ormsby_filter() returns signalenvelopephasefrequency dict
+Key Existing Functions to Reuse
+Function	File	Purpose
+ormsby_filter()	srcfiltersfuncOrmsby.py	Create filter kernel
+apply_ormsby_filter()	srcfiltersfuncOrmsby.py	Apply filter, get envelopephase
+create_filter_kernels()	srcfiltersfuncDesignFilterBank.py	Batch kernel creation from specs
+apply_filter_bank()	srcfiltersfuncDesignFilterBank.py	Apply all filters in bank
+print_filter_specs()	srcfiltersfuncDesignFilterBank.py	Debug output of spec table
+Verification
+Run page 45 script → compare output to reference figures II-9 and II-10
+
+Oscillation pattern should match (large amplitude ~1937-1938, smaller ~1940-1945, moderate ~1946-1951)
+Envelope should smoothly track amplitude variation
+Both methods should produce similar filtered signals; envelopes may differ in smoothness
+Run page 152 script → compare to reference referencespage_152filter_decomposition.png
+
+6 components should span different frequency bands
+Lowpass captures slow trend
+Highest-frequency bandpass6 shows rapid oscillations
+Sum of all components should approximately reconstruct original signal
+Envelope sanity check
+
+Envelope should always be ≥ 0
+Envelope should never cross the filtered signal (should always contain it)
+Modulate method envelopes expected to be smoother than subtract method

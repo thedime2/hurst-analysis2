@@ -221,22 +221,99 @@ Implementation:
 
 ---
 
-### Phase 4 — Page 152 Filter Decomposition
+### Phase 4 — Page 45 & Page 152 Filter Reproduction
 
-**Goal:** Reproduce the six-filter structural decomposition
+**Goal:** Reproduce Chapter II filter demonstrations and the six-filter structural decomposition
 
-**Status:** Not started
+**Status:** In progress
+
+#### Part A: Page 45 — Figures II-9 & II-10
+
+Single bandpass filter demonstrating "Time-Persistence of Cyclicality" (II-9)
+and "Principle of Variation at Work" (II-10, with amplitude envelope).
+
+Filter specification (rad/year, initial estimates from visual inspection):
+- Ormsby bandpass: w1=3.20, w2=3.55, w3=6.35, w4=6.70
+- nw = 359 × 5 = 1795
+- Display window: 1935-01-01 to 1954-02-01
+
+Comparison of two bandpass construction methods:
+1. Modulated (cosine-shift of baseband lowpass) — recommended
+2. Subtract (LP_high minus LP_low) — classic approach
 
 Tasks:
-- Reconstruct low-pass and band-pass filters from page 152
-- Verify summed reconstruction accuracy
-- Relate bands to nominal model layers
-- Explain why apparent spectral gaps do not violate energy conservation
+- Apply filter using both methods with analytic (complex) mode
+- Compare envelope extraction quality between methods
+- Visual match to Hurst's Figures II-9 and II-10
 
 Deliverables:
-- Filter definitions
-- Component plots
+- `experiments/page_45/reproduce_II9_II10.py`
+- Comparison plot: `experiments/page_45/figure_II9_II10_comparison.png`
+
+#### Part B: Page 152 — Six-Filter Decomposition
+
+Six-filter structural decomposition of DJIA into frequency bands.
+
+Filter specifications (rad/year, initial estimates from visual inspection):
+
+| # | Type | w1 | w2 | w3 | w4 | Center | Period | nw |
+|---|------|----|----|----|----|----|-----|----|
+| 1 | LP   | —  | —  | 0.85 | 1.25 | — | >5 yr | 1393 |
+| 2 | BP   | 0.85 | 1.25 | 2.05 | 2.45 | 1.65 | 3.81 yr | 1393 |
+| 3 | BP   | 3.20 | 3.55 | 6.35 | 6.70 | 4.95 | 1.27 yr | 1245 |
+| 4 | BP   | 7.25 | 7.55 | 9.55 | 9.85 | 8.55 | 0.74 yr | 1745 |
+| 5 | BP   | 13.65 | 13.95 | 19.35 | 19.65 | 16.65 | 0.38 yr | 1299 |
+| 6 | BP   | 28.45 | 28.75 | 35.95 | 36.25 | 32.35 | 0.19 yr | 1299 |
+
+Note: These are initial estimates subject to refinement. The focus is
+reproduction first, then understanding WHY these particular filters were chosen.
+
+Three rendering modes:
+1. Real-valued filters (no envelopes) — direct comparison to Hurst's figure
+2. Complex modulated bandpass with analytic envelopes
+3. Complex subtract bandpass with analytic envelopes
+
+Tasks:
+- Apply all 6 filters in 3 modes
+- Verify summed reconstruction accuracy
+- Compare envelope quality between modulate and subtract methods
+- Relate bands to nominal model layers (later)
+- Explain why apparent spectral gaps do not violate energy conservation (later)
+
+Deliverables:
+- `experiments/page_152/reproduce_decomposition.py`
+- `experiments/page_152/page152_real.png`
+- `experiments/page_152/page152_complex_modulate.png`
+- `experiments/page_152/page152_complex_subtract.png`
 - Reconstruction error metrics
+
+#### Results (Phase 4)
+
+**Page 45**: Both modulate and subtract methods produce identical filtered signals
+and envelopes for this wide passband. Amplitude pattern matches Hurst's Figure II-9.
+
+**Page 152**: All 3 rendering modes verified. Reconstruction captures 96.2% of
+signal energy (3.8% residual from spectral gaps between filter passbands).
+
+#### Part C: CMW (Complex Morlet Wavelet) Comparison
+
+FWHM-matched Complex Morlet Wavelets designed in the frequency domain, using
+Mike X Cohen's FWHM parameterization (Cohen 2019, NeuroImage 199:81-86).
+
+Matching rule: CMW center frequency = Ormsby (w2+w3)/2, CMW FWHM half-gain
+points align with Ormsby skirt midpoints (w1+w2)/2 and (w3+w4)/2.
+
+Module: `src/time_frequency/cmw.py`
+
+Comparison scripts:
+- `experiments/page_45/compare_ormsby_vs_cmw.py` — single bandpass
+- `experiments/page_152/compare_ormsby_vs_cmw.py` — 6-filter decomposition
+- `experiments/appendix_A/compare_comb_ormsby_vs_cmw.py` — 23-filter comb bank
+
+Results: CMW envelopes track similarly to Ormsby envelopes. CMW reconstruction
+captures 96.6% energy (vs 96.2% for Ormsby). The Gaussian frequency response
+produces smoother envelopes with no sidelobe artifacts, but lacks the flat
+passband of the Ormsby trapezoid.
 
 ---
 
@@ -244,9 +321,11 @@ Deliverables:
 
 **Goal:** Test and extend Hurst's assumptions
 
-**Status:** Not started
+**Status:** In progress (CMW infrastructure complete)
 
 Tasks:
+- ✅ Implement CMW frequency-domain design with FWHM matching
+- ✅ Produce Ormsby vs CMW comparisons for page 45, 152, and comb bank
 - Compute CMW scalograms
 - Perform ridge detection
 - Compare ridge continuity to filter-derived line spectra
@@ -254,6 +333,8 @@ Tasks:
 - Analyze envelope cross-scale influence
 
 Deliverables:
+- ✅ CMW module: `src/time_frequency/cmw.py`
+- ✅ Comparison plots (page 45, page 152, comb bank)
 - Scalograms
 - Ridge plots
 - Comparative diagnostics

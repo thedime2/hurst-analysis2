@@ -3,7 +3,11 @@
     "allow": [
       "Bash(python phase1_complete.py:*)",
       "Bash(python:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.biorxiv.org)",
+      "WebFetch(domain:groups.google.com)"
     ]
   }
 }
