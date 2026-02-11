@@ -21,6 +21,12 @@ from .funcDesignFilterBank import (
     create_time_frequency_heatmap,
     print_filter_specs
 )
+from .decimation import (
+    decimate_signal,
+    interpolate_sparse,
+    interpolate_3point,
+    interpolate_output_dict
+)
 
 __all__ = [
     'ormsby_filter',
@@ -34,5 +40,9 @@ __all__ = [
     'plot_filter_bank_response',
     'plot_idealized_comb_response',
     'create_time_frequency_heatmap',
-    'print_filter_specs'
+    'print_filter_specs',
+    'decimate_signal',
+    'interpolate_sparse',
+    'interpolate_3point',
+    'interpolate_output_dict'
 ]

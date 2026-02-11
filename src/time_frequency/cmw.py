@@ -150,7 +150,8 @@ def cmw_freq_domain(f0, fwhm, fs, nfft, analytic=True):
 # Apply CMW to signal
 # ============================================================================
 
-def apply_cmw(signal, f0, fwhm, fs, analytic=True):
+def apply_cmw(signal, f0, fwhm, fs, analytic=True,
+              spacing=1, offset=1, interp='none'):
     """
     Apply a single CMW to a signal via FFT multiplication.
 
@@ -166,6 +167,12 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True):
         Sampling rate (samples per year).
     analytic : bool
         If True, returns complex analytic signal with envelope/phase.
+    spacing : int
+        Decimation factor. 1 = no decimation (default). N = every Nth sample.
+    offset : int
+        1-based starting index (1 through spacing). Default 1.
+    interp : str
+        Gap-filling method: 'none', '3point', 'cubic', 'linear'
 
     Returns
     -------
@@ -178,6 +185,39 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True):
         'frequency': ndarray or None — instantaneous freq in cycles/year
     """
     signal = np.asarray(signal, dtype=np.float64)
+    full_length = len(signal)
+
+    # Decimation path
+    if spacing > 1:
+        from src.filters.decimation import (
+            decimate_signal, interpolate_output_dict, VALID_METHODS
+        )
+        if interp not in VALID_METHODS:
+            raise ValueError(f"interp must be one of {VALID_METHODS}, got '{interp}'")
+
+        signal_dec, indices = decimate_signal(signal, spacing, offset)
+        fs_dec = fs / spacing
+
+        # Nyquist check
+        nyq_dec = np.pi * fs_dec  # rad/yr
+        if f0 + fwhm / 2 > nyq_dec:
+            raise ValueError(
+                f"CMW f0={f0:.2f} + fwhm/2={fwhm/2:.2f} = {f0 + fwhm/2:.2f} rad/yr "
+                f"exceeds decimated Nyquist={nyq_dec:.2f} rad/yr (spacing={spacing})"
+            )
+
+        # Apply CMW to decimated signal with adjusted fs
+        out = _apply_cmw_core(signal_dec, f0, fwhm, fs_dec, analytic)
+
+        # Interpolate back to full length
+        return interpolate_output_dict(out, indices, full_length, method=interp)
+
+    # No decimation: standard path
+    return _apply_cmw_core(signal, f0, fwhm, fs, analytic)
+
+
+def _apply_cmw_core(signal, f0, fwhm, fs, analytic):
+    """Core CMW application logic (no decimation)."""
     L = len(signal)
 
     # Choose nfft as next power of 2 for efficiency
@@ -199,14 +239,14 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True):
     out = {}
 
     if analytic:
-        # Complex output → extract envelope, phase, frequency
+        # Complex output -> extract envelope, phase, frequency
         out['signal'] = y
         out['envelope'] = np.abs(y)
         phi = np.angle(y)
         phi_unwrapped = np.unwrap(phi)
         out['phase'] = phi_unwrapped
         out['phasew'] = phi
-        # Instantaneous frequency: dφ/dt / (2π), in cycles/year
+        # Instantaneous frequency: dphi/dt / (2pi), in cycles/year
         f_inst = np.gradient(phi_unwrapped, 1.0 / fs) / (2.0 * np.pi)
         out['frequency'] = f_inst
     else:
@@ -224,7 +264,8 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True):
 # Apply bank of CMWs
 # ============================================================================
 
-def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True):
+def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True,
+                   spacing=1, offset=1, interp='none'):
     """
     Apply a bank of CMWs to a signal.
 
@@ -239,6 +280,12 @@ def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True):
         Sampling rate.
     analytic : bool
         If True, extract envelopes and phase.
+    spacing : int
+        Decimation factor. 1 = no decimation (default). N = every Nth sample.
+    offset : int
+        1-based starting index (1 through spacing). Default 1.
+    interp : str
+        Gap-filling method: 'none', '3point', 'cubic', 'linear'
 
     Returns
     -------
@@ -258,7 +305,8 @@ def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True):
         use_analytic = analytic and (params['f0'] != 0)
 
         output = apply_cmw(signal, params['f0'], params['fwhm'], fs,
-                           analytic=use_analytic)
+                           analytic=use_analytic,
+                           spacing=spacing, offset=offset, interp=interp)
         output['spec'] = params
         output['index'] = i
         results['filter_outputs'].append(output)

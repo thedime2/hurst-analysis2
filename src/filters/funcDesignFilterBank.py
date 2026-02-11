@@ -440,11 +440,12 @@ def create_filter_kernels(filter_specs, fs=52, filter_type='modulate', analytic=
     return filters
 
 
-def apply_filter_bank(signal, filters, fs=52, mode='reflect'):
+def apply_filter_bank(signal, filters, fs=52, mode='reflect',
+                      spacing=1, offset=1, interp='none'):
     """
     Apply all filters in the bank to a signal.
     Uses apply_ormsby_filter() from your existing code.
-    
+
     Parameters:
     -----------
     signal : array-like
@@ -452,10 +453,16 @@ def apply_filter_bank(signal, filters, fs=52, mode='reflect'):
     filters : list of dict
         Output from create_filter_kernels()
     fs : float
-        Sampling rate
+        Sampling rate (samples per year)
     mode : str
         Boundary handling: 'reflect', 'zeropad', or 'valid'
-        
+    spacing : int
+        Decimation factor. 1 = no decimation (default). N = every Nth sample.
+    offset : int
+        1-based starting index (1 through spacing). Default 1.
+    interp : str
+        Gap-filling method: 'none', '3point', 'cubic', 'linear'
+
     Returns:
     --------
     results : dict containing:
@@ -463,26 +470,91 @@ def apply_filter_bank(signal, filters, fs=52, mode='reflect'):
         - filter_specs: list of specifications
         - signal: original input signal
     """
+    from .decimation import decimate_signal, interpolate_output_dict, VALID_METHODS
+
+    signal = np.asarray(signal, dtype=np.float64)
+    full_length = len(signal)
+
     results = {
         'filter_outputs': [],
         'filter_specs': [f['spec'] for f in filters],
         'signal': signal
     }
-    
+
+    # No decimation: original path
+    if spacing == 1:
+        for i, filt in enumerate(filters):
+            output = apply_ormsby_filter(
+                signal=signal,
+                h=filt['kernel'],
+                mode=mode,
+                fs=fs
+            )
+            output['spec'] = filt['spec']
+            output['index'] = i
+            results['filter_outputs'].append(output)
+        return results
+
+    # --- Decimated path ---
+    if interp not in VALID_METHODS:
+        raise ValueError(f"interp must be one of {VALID_METHODS}, got '{interp}'")
+
+    signal_dec, indices = decimate_signal(signal, spacing, offset)
+    fs_dec = fs / spacing
+    nyq_dec = np.pi * fs_dec  # Nyquist in rad/yr
+
+    twopi = 2 * np.pi
+
     for i, filt in enumerate(filters):
+        spec = filt['spec']
+
+        # Nyquist check: highest frequency edge must be below decimated Nyquist
+        if spec['type'] == 'lp':
+            f_max_rad = spec['f_stop']
+        else:
+            f_max_rad = spec['f4']
+        if f_max_rad > nyq_dec:
+            raise ValueError(
+                f"Filter {i} ({spec.get('label', '')}) has f_max={f_max_rad:.2f} rad/yr "
+                f"which exceeds decimated Nyquist={nyq_dec:.2f} rad/yr "
+                f"(spacing={spacing}, fs_dec={fs_dec:.1f})"
+            )
+
+        # Redesign kernel for decimated sampling rate
+        nw_dec = max(51, filt['nw'] // spacing)
+        if nw_dec % 2 == 0:
+            nw_dec += 1  # keep odd
+
+        # Determine filter type and analytic from original kernel
+        is_analytic = np.iscomplexobj(filt['kernel'])
+
+        if spec['type'] == 'lp':
+            f_edges = np.array([spec['f_pass'], spec['f_stop']]) / twopi
+            h_dec = ormsby_filter(
+                nw=nw_dec, f_edges=f_edges, fs=fs_dec,
+                filter_type='lp', analytic=is_analytic
+            )
+        else:
+            f_edges = np.array([spec['f1'], spec['f2'], spec['f3'], spec['f4']]) / twopi
+            # Infer method from spec if available, default to 'modulate'
+            method = spec.get('method', 'modulate')
+            h_dec = ormsby_filter(
+                nw=nw_dec, f_edges=f_edges, fs=fs_dec,
+                filter_type='bp', method=method, analytic=is_analytic
+            )
+
+        # Apply to decimated signal
         output = apply_ormsby_filter(
-            signal=signal,
-            h=filt['kernel'],
-            mode=mode,
-            fs=fs
+            signal=signal_dec, h=h_dec, mode=mode, fs=fs_dec
         )
-        
-        # Add metadata
-        output['spec'] = filt['spec']
+
+        # Interpolate back to full length
+        output = interpolate_output_dict(output, indices, full_length, method=interp)
+
+        output['spec'] = spec
         output['index'] = i
-        
         results['filter_outputs'].append(output)
-    
+
     return results
 
 
