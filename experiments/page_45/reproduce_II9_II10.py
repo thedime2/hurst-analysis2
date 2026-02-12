@@ -42,7 +42,7 @@ DATE_END = '1965-05-21'
 
 # Display window matching Figure II-9 x-axis
 DISPLAY_START = '1935-01-01'
-DISPLAY_END = '1954-02-01'
+DISPLAY_END = '1952-02-01'
 
 # Data parameters
 FS = 52  # Weekly sampling rate (samples per year)
