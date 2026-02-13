@@ -116,7 +116,7 @@ print("-" * 60)
 
 results_baseline = apply_filter_bank(close_prices, filters, fs=FS, mode='reflect')
 results_s1 = apply_filter_bank(close_prices, filters, fs=FS, mode='reflect',
-                               spacing=1, offset=1, interp='none')
+                               spacing=1, startidx=0, interp='none')
 
 all_match = True
 for i in range(len(filters)):
@@ -144,7 +144,7 @@ ormsby_results = {}
 for method in INTERP_METHODS:
     ormsby_results[method] = apply_filter_bank(
         close_prices, filters, fs=FS, mode='reflect',
-        spacing=SPACING, offset=1, interp=method
+        spacing=SPACING, startidx=0, interp=method
     )
 
 # Verify output lengths
@@ -214,7 +214,7 @@ print("-" * 60)
 for off in OFFSETS:
     res = apply_filter_bank(
         close_prices, filters, fs=FS, mode='reflect',
-        spacing=SPACING, offset=off, interp='3point'
+        spacing=SPACING, startidx=off-1, interp='3point'
     )
     env = res['filter_outputs'][0]['envelope']
     valid = ~np.isnan(env)
@@ -223,7 +223,7 @@ for off in OFFSETS:
     if valid_both.any():
         rms = np.sqrt(np.mean((env_base[valid_both] - env[valid_both])**2))
         rel = rms / (np.mean(env_base[valid_both]) + 1e-10) * 100
-        print(f"  offset={off}: FC-1 envelope relative RMS = {rel:.1f}%%")
+        print(f"  startidx={off-1}: FC-1 envelope relative RMS = {rel:.1f}%%")
 print()
 
 
@@ -244,11 +244,11 @@ cmw_baseline = apply_cmw_bank(close_prices, cmw_params, fs=FS, analytic=True)
 
 # Decimated CMW
 cmw_dec = apply_cmw_bank(close_prices, cmw_params, fs=FS, analytic=True,
-                         spacing=SPACING, offset=1, interp='3point')
+                         spacing=SPACING, startidx=0, interp='3point')
 
 # Regression: spacing=1
 cmw_s1 = apply_cmw_bank(close_prices, cmw_params, fs=FS, analytic=True,
-                        spacing=1, offset=1, interp='none')
+                        spacing=1, startidx=0, interp='none')
 cmw_match = True
 for i in range(len(cmw_params)):
     env_base = cmw_baseline['filter_outputs'][i]['envelope']
@@ -333,7 +333,7 @@ plt.close(fig)
 
 # Also compute CMW with cubic for comparison
 cmw_cubic = apply_cmw_bank(close_prices, cmw_params, fs=FS, analytic=True,
-                           spacing=SPACING, offset=1, interp='cubic')
+                           spacing=SPACING, startidx=0, interp='cubic')
 
 fig2, axes2 = plt.subplots(len(REPR_FILTERS), 1, figsize=(16, 4*len(REPR_FILTERS)),
                            sharex=True)

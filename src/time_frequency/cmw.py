@@ -151,7 +151,7 @@ def cmw_freq_domain(f0, fwhm, fs, nfft, analytic=True):
 # ============================================================================
 
 def apply_cmw(signal, f0, fwhm, fs, analytic=True,
-              spacing=1, offset=1, interp='none'):
+              spacing=1, startidx=0, interp='none'):
     """
     Apply a single CMW to a signal via FFT multiplication.
 
@@ -169,8 +169,8 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True,
         If True, returns complex analytic signal with envelope/phase.
     spacing : int
         Decimation factor. 1 = no decimation (default). N = every Nth sample.
-    offset : int
-        1-based starting index (1 through spacing). Default 1.
+    startidx : int
+        0-based starting index (0 through spacing-1). Default 0.
     interp : str
         Gap-filling method: 'none', '3point', 'cubic', 'linear'
 
@@ -178,11 +178,11 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True,
     -------
     result : dict
         Same structure as apply_ormsby_filter():
-        'signal': ndarray — filtered output (complex if analytic, real if not)
-        'envelope': ndarray or None — |z(t)| if analytic
-        'phase': ndarray or None — unwrapped phase if analytic
-        'phasew': ndarray or None — wrapped phase if analytic
-        'frequency': ndarray or None — instantaneous freq in cycles/year
+        'signal': ndarray -- filtered output (complex if analytic, real if not)
+        'envelope': ndarray or None -- |z(t)| if analytic
+        'phase': ndarray or None -- unwrapped phase if analytic
+        'phasew': ndarray or None -- wrapped phase if analytic
+        'frequency': ndarray or None -- instantaneous freq in cycles/year
     """
     signal = np.asarray(signal, dtype=np.float64)
     full_length = len(signal)
@@ -195,7 +195,7 @@ def apply_cmw(signal, f0, fwhm, fs, analytic=True,
         if interp not in VALID_METHODS:
             raise ValueError(f"interp must be one of {VALID_METHODS}, got '{interp}'")
 
-        signal_dec, indices = decimate_signal(signal, spacing, offset)
+        signal_dec, indices = decimate_signal(signal, spacing, offset=startidx + 1)
         fs_dec = fs / spacing
 
         # Nyquist check
@@ -265,7 +265,7 @@ def _apply_cmw_core(signal, f0, fwhm, fs, analytic):
 # ============================================================================
 
 def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True,
-                   spacing=1, offset=1, interp='none'):
+                   spacing=1, startidx=0, interp='none'):
     """
     Apply a bank of CMWs to a signal.
 
@@ -282,8 +282,8 @@ def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True,
         If True, extract envelopes and phase.
     spacing : int
         Decimation factor. 1 = no decimation (default). N = every Nth sample.
-    offset : int
-        1-based starting index (1 through spacing). Default 1.
+    startidx : int
+        0-based starting index (0 through spacing-1). Default 0.
     interp : str
         Gap-filling method: 'none', '3point', 'cubic', 'linear'
 
@@ -306,7 +306,7 @@ def apply_cmw_bank(signal, cmw_params_list, fs, analytic=True,
 
         output = apply_cmw(signal, params['f0'], params['fwhm'], fs,
                            analytic=use_analytic,
-                           spacing=spacing, offset=offset, interp=interp)
+                           spacing=spacing, startidx=startidx, interp=interp)
         output['spec'] = params
         output['index'] = i
         results['filter_outputs'].append(output)

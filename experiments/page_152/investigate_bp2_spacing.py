@@ -28,7 +28,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.image as mpimg
-from scipy.signal import filtfilt
 
 from src.filters import (
     ormsby_filter,
@@ -134,35 +133,21 @@ print(f"  Output range (display): [{output_full[s_idx:e_idx].min():.2f}, "
 
 print(f"\n--- Step 2: Decimate-first approach (nw={NW_SHORT}, step={STEP}) ---")
 
-# Reduced sample rate
 fs_dec = FS / STEP
 print(f"  Decimated sample rate: {fs_dec:.2f} samples/yr")
 print(f"  Effective time span: {NW_SHORT} taps * {STEP} wk/tap = {NW_SHORT * STEP} weeks")
 
-# Design filter at the decimated sample rate
-# Same physical frequencies, different fs
-f_edges_dec = np.array([BP2_SPEC['f1'], BP2_SPEC['f2'],
-                         BP2_SPEC['f3'], BP2_SPEC['f4']]) / TWOPI
-h_short = ormsby_filter(nw=NW_SHORT, f_edges=f_edges_dec, fs=fs_dec,
+# Design filter using built-in spacing parameter (auto-adjusts fs)
+h_short = ormsby_filter(nw=NW_SHORT, f_edges=f_edges_full, fs=FS, spacing=STEP,
                         filter_type='bp', method='modulate', analytic=False)
-
 print(f"  Short kernel length: {len(h_short)}")
 
-# For each start index (0 through STEP-1):
-#   1. Decimate input: y_dec = close_prices[start::step]
-#   2. Filter decimated signal: filtfilt(h_short, 1.0, y_dec)
-#   3. Place back: output[start::step] = filtered
+# Apply with built-in spacing/startidx for each start index
 spaced_outputs = {}
 for start in range(STEP):
-    y_dec = close_prices[start::STEP]
-    # padlen must be < len(y_dec); default is 3*nw which may exceed it
-    pad = min(3 * (NW_SHORT - 1), len(y_dec) - 1)
-    y_filtered = filtfilt(h_short, 1.0, y_dec, padlen=pad)
-
-    # Place back into full-length array with NaN between
-    out_spaced = np.full(n_points, np.nan)
-    out_spaced[start::STEP] = y_filtered
-    spaced_outputs[start] = out_spaced
+    result = apply_ormsby_filter(close_prices, h_short, mode='reflect',
+                                 fs=FS, spacing=STEP, startidx=start)
+    spaced_outputs[start] = result['signal']
 
 # Show stats for start=0 (default)
 valid_disp = spaced_outputs[0][s_idx:e_idx]

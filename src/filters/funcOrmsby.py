@@ -19,26 +19,33 @@ def ormsby_filter(
     fs,
     filter_type='bp',
     method='modulate',      # 'subtract' or 'modulate' (for bp only)
-    analytic=False         # True → complex quadrature filter 
-    #constrain_dc=False      # Optional: enforce H(0)=1 for LP - DF Dropped this else we get half amplitude on low pass
+    analytic=False,         # True → complex quadrature filter
+    spacing=1              # Decimation factor: fs is divided by spacing internally
 ):
-    
+
     """
-    (Recommendation Use the modulate method for analytic bandpass filters - it's Cleaner (no wobble)
-     More symmetric
-     Better phase characteristics
-     Standard practice in signal processing
-     The subtract method works and can be useful for understanding the construction, but modulate is superior for production use.
+    Create FIR filter coefficients using the Ormsby method.
+
+    When spacing > 1, the sample rate is adjusted internally (fs / spacing)
+    so the kernel is designed for the decimated rate. The kernel length nw
+    stays as specified — at spacing=7, nw=199 taps span 199*7 = 1393 weeks.
+
+    Recommendation: Use the modulate method for analytic bandpass filters —
+    cleaner, more symmetric, better phase characteristics.
+    The subtract method works and can be useful for understanding the
+    construction, but modulate is superior for production use.
     """
-    
+
     if nw % 2 == 0:
         nw += 1
     N = nw
     M = N // 2
     n = np.arange(-M, M + 1)
 
-    #fs = 1.0 / dt  # ← Keep this, remove the hardcoded fs=52
-    #fs = 52
+    # Adjust sample rate for spaced filters
+    if spacing > 1:
+        fs = fs / spacing
+
     nyq = fs / 2.0
 
     def norm_freq(f):
@@ -375,21 +382,34 @@ def ormsby_derivative_filter(nw, f_pass, f_stop, fs, constrain=True, min_gain=1e
     
     return h
 
-def apply_ormsby_filter(signal, h, mode='reflect', fs=None):
+def apply_ormsby_filter(signal, h, mode='reflect', fs=None,
+                       spacing=1, startidx=0, interp='none'):
     """
     Apply a real or complex FIR filter to a real signal and return analytic components.
-    
+
+    When spacing > 1, the input is decimated first (every spacing-th sample
+    starting at startidx), the filter is applied to the decimated signal, and
+    the result is placed back into a full-length array.  The kernel h should
+    have been designed at the decimated sample rate (fs/spacing).
+
     Parameters
     ----------
     signal : array-like, shape (L,)
         Real-valued input (e.g., log-price, returns).
-    h : array-like, shape (N,) — N must be odd
+    h : array-like, shape (N,) -- N must be odd
         Filter coefficients (real or complex). Assumed zero-phase and centered.
     mode : {'valid', 'zeropad', 'reflect'}
         Boundary handling method.
     fs : float, optional
-        fs Sampling interval (seconds). Required if you want instantaneous frequency.
-    
+        Sampling rate. Required if you want instantaneous frequency.
+    spacing : int, optional
+        Decimation factor. 1 = no decimation (default).
+    startidx : int, optional
+        0-based starting index for decimation (0 through spacing-1). Default 0.
+    interp : str, optional
+        Gap-filling after decimation: 'none', '3point', 'cubic', 'linear'.
+        Default 'none' (NaN between samples).
+
     Returns
     -------
     result : dict
@@ -397,19 +417,36 @@ def apply_ormsby_filter(signal, h, mode='reflect', fs=None):
             'signal': ndarray,          # filtered output (same length as input)
             'envelope': ndarray or None,
             'phase': ndarray or None,
-            'frequency': ndarray or None  # in Hz, if dt provided
+            'frequency': ndarray or None  # in Hz, if fs provided
         }
     """
     signal = np.asarray(signal, dtype=np.float64)
     h = np.asarray(h)
-    
+
     if h.ndim != 1:
         raise ValueError("Filter h must be 1D")
     if signal.ndim != 1:
         raise ValueError("Signal must be 1D")
     if len(h) % 2 == 0:
         raise ValueError("Filter length must be odd (for centered design)")
-    
+
+    if spacing > 1:
+        from src.filters.decimation import decimate_signal, interpolate_output_dict
+        full_length = len(signal)
+        signal_dec, indices = decimate_signal(signal, spacing, offset=startidx + 1)
+        fs_dec = fs / spacing if fs is not None else None
+        result = _apply_ormsby_core(signal_dec, h, mode, fs_dec)
+        return interpolate_output_dict(result, indices, full_length, method=interp)
+
+    return _apply_ormsby_core(signal, h, mode, fs)
+
+
+def _apply_ormsby_core(signal, h, mode, fs):
+    """
+    Core convolution + analytic extraction logic.
+
+    Parameters match the non-decimated path of apply_ormsby_filter().
+    """
     L = len(signal)
     N = len(h)
     M = N // 2

@@ -441,7 +441,7 @@ def create_filter_kernels(filter_specs, fs=52, filter_type='modulate', analytic=
 
 
 def apply_filter_bank(signal, filters, fs=52, mode='reflect',
-                      spacing=1, offset=1, interp='none'):
+                      spacing=1, startidx=0, interp='none'):
     """
     Apply all filters in the bank to a signal.
     Uses apply_ormsby_filter() from your existing code.
@@ -458,8 +458,8 @@ def apply_filter_bank(signal, filters, fs=52, mode='reflect',
         Boundary handling: 'reflect', 'zeropad', or 'valid'
     spacing : int
         Decimation factor. 1 = no decimation (default). N = every Nth sample.
-    offset : int
-        1-based starting index (1 through spacing). Default 1.
+    startidx : int
+        0-based starting index (0 through spacing-1). Default 0.
     interp : str
         Gap-filling method: 'none', '3point', 'cubic', 'linear'
 
@@ -499,7 +499,7 @@ def apply_filter_bank(signal, filters, fs=52, mode='reflect',
     if interp not in VALID_METHODS:
         raise ValueError(f"interp must be one of {VALID_METHODS}, got '{interp}'")
 
-    signal_dec, indices = decimate_signal(signal, spacing, offset)
+    signal_dec, indices = decimate_signal(signal, spacing, offset=startidx + 1)
     fs_dec = fs / spacing
     nyq_dec = np.pi * fs_dec  # Nyquist in rad/yr
 
