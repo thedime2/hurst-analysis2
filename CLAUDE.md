@@ -182,11 +182,20 @@ Located in [references/page_152/](references/page_152/)
 
 ### Phase 4: Page 45 & Page 152 Filter Reproduction (COMPLETE)
 **Goal**: Reproduce six-filter structural decomposition
+- ✅ Page 45 reproduction (modulate and subtract methods)
+- ✅ Page 152 six-filter decomposition (3 rendering modes, 96.2% energy)
+- ✅ CMW comparison (96.6% energy)
+- ⬜ Explain WHY these 6 filter frequencies were chosen
 
 ### Phase 5: Modern Extensions (IN PROGRESS)
 **Goal**: CMW scalograms, ridge detection, hypothesis testing
 - ✅ CMW frequency-domain FWHM design (`src/time_frequency/cmw.py`)
 - ✅ Ormsby vs CMW comparisons for page 45, page 152, and comb bank
+- ✅ Spacing/startidx integration into core APIs (`funcOrmsby.py`, `cmw.py`, `funcDesignFilterBank.py`)
+- ⬜ CMW scalograms
+- ⬜ Ridge detection and tracking
+- ⬜ Beating vs drift hypothesis testing
+- ⬜ Page 152 filter derivation from nominal model
 
 ---
 
@@ -313,13 +322,22 @@ plt.show()
 
 ## Current Development Focus
 
-**Phase 1 Completion** (as of February 2026):
-- Implementing automated peak/trough detection
-- Implementing envelope fitting (a(ω) = k/ω) using least-squares regression
-- Replacing hardcoded envelope slopes with fitted parameters
-- Generating structured Phase 1 deliverables
+**Phase 5 Extensions** (as of February 2026):
+- CMW frequency-domain FWHM design complete
+- Ormsby vs CMW comparisons complete for page 45, 152, and comb bank
+- Spacing/startidx integrated into core APIs (decimate-first approach, all verified)
+- Outstanding: CMW scalograms, ridge detection, beating vs drift, filter derivation
 
-**Next Step**: Implement [src/spectral/peak_detection.py](src/spectral/peak_detection.py) and [src/spectral/envelopes.py](src/spectral/envelopes.py)
+**Supplementary Work** (not yet started):
+- Daily data reproduction (Phase 2A-0)
+- Sub-sample interpolation (Phase 2A)
+- Matrix Pencil Method parametric decomposition (Phase 2B)
+
+**Next Steps (Phase 5 remaining)**:
+1. CMW scalograms -- time-frequency heatmaps across full DJIA record
+2. Ridge detection and tracking -- extract frequency ridges from scalogram
+3. Beating vs drift hypothesis testing -- distinguish multi-line interference from frequency drift
+4. Page 152 filter derivation -- explain how Hurst chose the 6 filter frequencies
 
 ---
 
@@ -333,8 +351,10 @@ plt.show()
 
 ## Notes for Future Sessions
 
-- The existing test script ([experiments/appendix_A/test_lanczos_djia.py](experiments/appendix_A/test_lanczos_djia.py)) has hardcoded envelope slopes (`ktop=0.1875`, `kbot=0.0575`) that were manually estimated - these should be replaced with fitted values once envelope fitting is implemented
+- The page 152 six-filter specifications in `experiments/page_152/reproduce_decomposition.py` are user-estimated from visual inspection of Hurst's graphics, NOT published values from the book. Refining these is an active research area.
 
-- When implementing Phase 2 (Ormsby filters), pay attention to the distinction between "real" and "complex" Ormsby filters - Hurst used real filters, but complex filters (with analytic envelopes) are planned for extensions
+- The Cyclitec PDF (`Dropbox/ebooks/jm-hurst-cycles-coursecyclitec-services-training-course_compress.pdf`) is a 1177-page scanned document with no extractable text. OCR would be needed for automated searching.
+
+- The 27-line nominal model in `data/processed/nominal_model.csv` spans 2.28-11.95 rad/yr. Lines below 3.5 rad/yr rely on Fourier peaks only (comb filters impractical at those frequencies).
 
 - The project uses Python 3.13+ - ensure all code is compatible

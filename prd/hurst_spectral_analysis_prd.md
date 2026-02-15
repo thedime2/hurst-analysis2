@@ -28,13 +28,17 @@ modern time–frequency tools.
 
 ### 2.2 Understanding Objectives
 
-- Determine how Hurst derived the **Nominal Model**
-- Clarify the relationship between:
-  - Fourier–Lanczos fine structure
-  - Line spectra
-  - Overlapping band-pass filter outputs
-  - Envelopes and modulation sidebands
-- Understand Hurst’s classification of certain frequencies as “meaningless”
+- ✅ Determine how Hurst derived the **Nominal Model** — Phase 3 reproduces the
+  derivation chain (spectrum -> comb filters -> line grouping -> spacing analysis)
+- ✅ Clarify the relationship between:
+  - Fourier-Lanczos fine structure (0.37 rad/yr spacing)
+  - Line spectra (27 lines identified)
+  - Overlapping band-pass filter outputs (frequency clustering confirmed)
+  - Envelopes and modulation sidebands (Figure AI-5 reproduced)
+- ⬜ Understand Hurst's classification of certain frequencies as "meaningless"
+- ✅ Determine how the 6 page-152 filters relate to the nominal model — see
+  `prd/page152_filter_derivation.md` (each filter targets one dominant cycle,
+  ~2:1 harmonic cascade, 97.7% energy captured)
 
 ### 2.3 Extension Objectives
 
@@ -221,11 +225,11 @@ Implementation:
 
 ---
 
-### Phase 4 — Page 45 & Page 152 Filter Reproduction
+### Phase 4 — Page 45 & Page 152 Filter Reproduction ✅ COMPLETE
 
 **Goal:** Reproduce Chapter II filter demonstrations and the six-filter structural decomposition
 
-**Status:** In progress
+**Status:** Complete (2026-02-10)
 
 #### Part A: Page 45 — Figures II-9 & II-10
 
@@ -242,13 +246,13 @@ Comparison of two bandpass construction methods:
 2. Subtract (LP_high minus LP_low) — classic approach
 
 Tasks:
-- Apply filter using both methods with analytic (complex) mode
-- Compare envelope extraction quality between methods
-- Visual match to Hurst's Figures II-9 and II-10
+- ✅ Apply filter using both methods with analytic (complex) mode
+- ✅ Compare envelope extraction quality between methods
+- ✅ Visual match to Hurst's Figures II-9 and II-10
 
 Deliverables:
-- `experiments/page_45/reproduce_II9_II10.py`
-- Comparison plot: `experiments/page_45/figure_II9_II10_comparison.png`
+- ✅ `experiments/page_45/reproduce_II9_II10.py`
+- ✅ Comparison plot: `experiments/page_45/figure_II9_II10_comparison.png`
 
 #### Part B: Page 152 — Six-Filter Decomposition
 
@@ -265,8 +269,10 @@ Filter specifications (rad/year, initial estimates from visual inspection):
 | 5 | BP   | 13.65 | 13.95 | 19.35 | 19.65 | 16.65 | 0.38 yr | 1299 |
 | 6 | BP   | 28.45 | 28.75 | 35.95 | 36.25 | 32.35 | 0.19 yr | 1299 |
 
-Note: These are initial estimates subject to refinement. The focus is
-reproduction first, then understanding WHY these particular filters were chosen.
+Note: These are initial estimates from visual inspection. For derivation
+rationale, see `prd/page152_filter_derivation.md`. Each filter targets one
+dominant nominal cycle from Table II-1, following the Principle of Harmonicity
+(~2:1 period ratios). Analysis script: `experiments/page_152/analyze_filter_derivation.py`.
 
 Three rendering modes:
 1. Real-valued filters (no envelopes) — direct comparison to Hurst's figure
@@ -274,18 +280,18 @@ Three rendering modes:
 3. Complex subtract bandpass with analytic envelopes
 
 Tasks:
-- Apply all 6 filters in 3 modes
-- Verify summed reconstruction accuracy
-- Compare envelope quality between modulate and subtract methods
-- Relate bands to nominal model layers (later)
-- Explain why apparent spectral gaps do not violate energy conservation (later)
+- ✅ Apply all 6 filters in 3 modes
+- ✅ Verify summed reconstruction accuracy
+- ✅ Compare envelope quality between modulate and subtract methods
+- ⬜ Relate bands to nominal model layers — see `prd/page152_filter_derivation.md`
+- ⬜ Explain why apparent spectral gaps do not violate energy conservation
 
 Deliverables:
-- `experiments/page_152/reproduce_decomposition.py`
-- `experiments/page_152/page152_real.png`
-- `experiments/page_152/page152_complex_modulate.png`
-- `experiments/page_152/page152_complex_subtract.png`
-- Reconstruction error metrics
+- ✅ `experiments/page_152/reproduce_decomposition.py`
+- ✅ `experiments/page_152/page152_real.png`
+- ✅ `experiments/page_152/page152_complex_modulate.png`
+- ✅ `experiments/page_152/page152_complex_subtract.png`
+- ✅ Reconstruction error metrics (96.2% energy capture)
 
 #### Results (Phase 4)
 
@@ -362,7 +368,7 @@ Deliverables:
 
 - ✅ Visual and numerical agreement with Hurst's figures (AI-1 through AI-6)
 - ✅ Reproducible derivation of nominal spacing (0.3719 vs 0.3676 rad/yr)
-- ⬜ Clear explanation of page 152 filter choices (Phase 4)
+- ⬜ Clear explanation of page 152 filter choices — see `prd/page152_filter_derivation.md`
 - ⬜ Demonstrated transferability (or limits) to modern data (Phase 5)
 
 ---

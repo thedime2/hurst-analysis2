@@ -73,57 +73,51 @@ analysis is performed on the raw series as loaded.
 ## Project Structure
 
 ```text
-hurst-analysis/
+hurst-analysis2/
+├── CLAUDE.md                  # Technical conventions and agent instructions
 ├── README.md
 ├── prd/
-│   └── hurst_spectral_analysis_prd.md
+│   ├── hurst_spectral_analysis_prd.md          # Main project PRD
+│   ├── supplementary_parametric_methods.md     # Phase 2 enhancement plans
+│   ├── page152_filter_derivation.md            # Filter derivation research
+│   └── ...
 │
 ├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── metadata/
+│   ├── raw/                   # Cached CSV data from stooq
+│   └── processed/             # Analysis results and nominal model
+│       └── nominal_model.csv  # 27-line period hierarchy
 │
 ├── src/
 │   ├── data/
-│   │   ├── loaders.py
-│   │   └── preprocessing.py
+│   │   └── loaders.py                  # getStooq() data loader
 │   │
 │   ├── spectral/
-│   │   ├── lanczos.py
-│   │   ├── envelopes.py
-│   │   └── spacing.py
+│   │   ├── lanczos.py                  # Fourier-Lanczos spectrum
+│   │   ├── peak_detection.py           # Peak/trough detection
+│   │   ├── envelopes.py                # Power-law envelope fitting
+│   │   └── frequency_measurement.py    # Instantaneous frequency
 │   │
 │   ├── filters/
-│   │   ├── ormsby.py
-│   │   ├── combs.py
-│   │   └── reconstruction.py
+│   │   ├── funcOrmsby.py               # Ormsby filter (real + complex)
+│   │   ├── funcDesignFilterBank.py     # Comb bank design
+│   │   └── decimation.py              # Decimation utilities
 │   │
 │   ├── nominal_model/
-│   │   ├── clustering.py
-│   │   ├── fitting.py
-│   │   └── model.py
+│   │   ├── sideband_analysis.py        # KMeans line grouping
+│   │   ├── lse_smoothing.py            # Frequency trace smoothing
+│   │   └── derivation.py              # Line spacing and model builder
 │   │
-│   ├── time_frequency/
-│   │   ├── cmw.py
-│   │   ├── ridges.py
-│   │   └── comparisons.py
-│   │
-│   └── visualization/
-│       ├── fourier_plots.py
-│       ├── filter_outputs.py
-│       └── scalograms.py
+│   └── time_frequency/
+│       └── cmw.py                      # Complex Morlet Wavelet (FWHM)
 │
 ├── experiments/
-│   ├── appendix_A/
-│   ├── p152_filters/
-│   └── modern_extensions/
+│   ├── appendix_A/            # Phases 1-3: Figures AI-1 through AI-6
+│   ├── page_45/               # Phase 4A: Figures II-9 and II-10
+│   └── page_152/              # Phase 4B: Six-filter decomposition
 │
-├── notebooks/
-│   ├── reproduction_walkthrough.ipynb
-│   └── hypothesis_tests.ipynb
-│
-└── app/
-    └── streamlit_app.py
+└── references/
+    ├── appendix_a/            # Scanned book figures AI-1 through AI-8
+    └── page_152/              # Scanned page 152 filter decomposition
 ```
 
 ---
@@ -140,27 +134,38 @@ hurst-analysis/
 
 ## Current Status
 
-- Project structure defined
-- Research PRD completed
-- Preparing Phase 1:
-  - Fourier–Lanczos spectrum
-  - Fine-structure detection
-  - Envelope fitting
+| Phase | Status | Key Result |
+|-------|--------|------------|
+| 1. Fourier-Lanczos | COMPLETE | 11 peaks, a(w)=k/w envelope, editorial error in Hurst's stated resolution identified |
+| 2. Comb Filter Bank | COMPLETE | 23 filters (7.6-12 rad/yr), frequency clustering confirmed |
+| 3. Nominal Model | COMPLETE | 27 lines, spacing 0.3719 rad/yr (1.2% match to Hurst's 0.3676) |
+| 4. Page 45 & 152 | COMPLETE | 96.2% reconstruction energy, CMW comparison (96.6%) |
+| 5. Extensions | IN PROGRESS | CMW module done, Ormsby vs CMW comparisons done |
 
 ---
 
-## Next Steps
+## Key Results
 
-1. Integrate existing data loader (`getStooq`)
-2. Stabilize Lanczos spectral analysis
-3. Reproduce Appendix A Figure AI-1
-4. Implement overlapping Ormsby comb filters
-5. Derive and test the Nominal Model
+- **Line Spectrum Confirmed**: DJIA exhibits discrete spectral peaks, not continuous noise
+- **Nominal Line Spacing**: 0.3719 rad/yr (Hurst's value: 0.3676, only 1.2% difference)
+- **27 Nominal Lines**: Spanning 2.28-11.95 rad/yr (periods 27-144 weeks)
+- **Amplitude-Frequency Law**: a(w) = k/w confirmed (all cycles have equal max rate of change)
+- **Reconstruction**: 6-filter decomposition captures 96.2% of signal energy
+
+---
+
+## Outstanding Work
+
+1. **Filter Derivation**: How did Hurst select the 6 page-152 filter frequencies from the nominal model?
+2. **Phase 5**: CMW scalograms, ridge detection, beating vs drift hypothesis
+3. **Parametric Methods**: Matrix Pencil Method, Prony, daily data reproduction
+4. **Modern Data**: Transfer framework to post-1965 DJIA data
 
 ---
 
 ## References
 
-- J.M. Hurst, *The Profit Magic of Stock Transaction Timing*
-- Appendix A, Figures AI-1 through AI-6
-- Page 152 band-pass filter analysis
+- J.M. Hurst, *The Profit Magic of Stock Transaction Timing* (1970)
+- J.M. Hurst, *Cycles Course* (Cyclitec Services, 1973-1975)
+- Ormsby, J.F.A., *Design Methods for Sampled Data Filters* (1960)
+- Lanczos, C., *Applied Analysis* (1956)
