@@ -141,9 +141,43 @@ This organizing principle determined the filter spacing: if cycles come in 2:1 r
 
 ---
 
-## Diagnostic Figure
+## Phase 5D Quantitative Verification (February 2026)
 
-See `experiments/page_152/filter_derivation_analysis.png` -- shows the Lanczos spectrum overlaid with the 6 filter passbands and Hurst's Table II-1 nominal cycle frequencies.
+### Visual Estimates vs Cyclitec Targets
+
+All visual estimates are shifted HIGHER in frequency than the Cyclitec targets:
+
+| Filter | Cyclitec (rad/yr) | Visual (rad/yr) | Offset | Energy Ratio |
+|--------|-------------------|-----------------|--------|-------------|
+| BP-2   | 1.40              | 1.65            | +0.25  | 0.70x       |
+| BP-3   | 4.19              | 4.95            | +0.76  | 0.82x       |
+| BP-4   | 8.17              | 8.55            | +0.38  | 1.09x       |
+| BP-5   | 16.34             | 16.65           | +0.31  | 0.99x       |
+| BP-6   | 28.69             | 32.35           | +3.66  | 0.80x       |
+
+Energy ratios near 1.0 (BP-4, BP-5) indicate well-centered filters.
+Lower ratios (BP-2, BP-6) suggest our visual reading shifted too high.
+
+### Key Conclusion
+
+Hurst designed filters for **cycle isolation**, not energy maximization. The a(w)=k/w envelope means naive energy optimization would pull all filters toward DC. Instead, each filter targets one dominant Cyclitec cycle with bandwidth set by the Principle of Variation (+/-20-30%).
+
+### Missing Cycles
+
+Of 11 Cyclitec cycles, 4 are excluded from the 6-filter decomposition:
+- 40-day, 20-day: above the highest filter band (would need shorter than weekly data)
+- 10-day, 5-day: above Nyquist for weekly data
+
+The remaining 7 cycles map cleanly to 6 filters (18-yr and 9-yr both fall in LP-1).
+
+See `experiments/page_152/phase5D_derivation_verification.png` for the full diagnostic figure.
+
+---
+
+## Diagnostic Figures
+
+- `experiments/page_152/filter_derivation_analysis.png` -- Initial analysis: Lanczos spectrum with filter passbands and nominal cycles
+- `experiments/page_152/phase5D_derivation_verification.png` -- Phase 5D: Multi-panel verification with energy sensitivity curves
 
 ---
 

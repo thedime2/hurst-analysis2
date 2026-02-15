@@ -1,0 +1,20 @@
+Phase 5D: Filter Derivation Verification -- Comparison Table
+================================================================================
+
+Filter    Cyclitec    Visual   Vis-Cyc    E(Cyc)    E(Vis)   E ratio
+----------------------------------------------------------------------
+  LP-1          LP        LP        --     93.2%     93.2%        --
+  BP-2        1.40      1.65    +0.25     7.82%     5.46%     0.70x
+  BP-3        4.19      4.95    +0.76     1.56%     1.27%     0.82x
+  BP-4        8.17      8.55    +0.38     0.23%     0.25%     1.09x
+  BP-5       16.34     16.65    +0.31     0.16%     0.16%     0.99x
+  BP-6       28.69     32.35    +3.66     0.07%     0.05%     0.80x
+
+  E ratio > 1.0 means visual estimate captures MORE energy
+  than Cyclitec center (filter shifted to catch spectral peaks).
+
+Key:
+  Cyclitec = target frequency from Cyclitec Course (rad/yr)
+  Visual = our center frequency estimated from book graphics (rad/yr)
+  Vis-Cyc = visual - Cyclitec offset (positive = shifted higher)
+  E ratio = E(Visual) / E(Cyclitec)

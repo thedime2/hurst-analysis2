@@ -187,15 +187,15 @@ Located in [references/page_152/](references/page_152/)
 - ✅ CMW comparison (96.6% energy)
 - ⬜ Explain WHY these 6 filter frequencies were chosen
 
-### Phase 5: Modern Extensions (IN PROGRESS)
+### Phase 5: Modern Extensions (COMPLETE)
 **Goal**: CMW scalograms, ridge detection, hypothesis testing
 - ✅ CMW frequency-domain FWHM design (`src/time_frequency/cmw.py`)
 - ✅ Ormsby vs CMW comparisons for page 45, page 152, and comb bank
 - ✅ Spacing/startidx integration into core APIs (`funcOrmsby.py`, `cmw.py`, `funcDesignFilterBank.py`)
-- ⬜ CMW scalograms
-- ⬜ Ridge detection and tracking
-- ⬜ Beating vs drift hypothesis testing
-- ⬜ Page 152 filter derivation from nominal model
+- ✅ CMW scalograms (`src/time_frequency/scalogram.py`)
+- ✅ Ridge detection and tracking (`src/time_frequency/ridge_detection.py`)
+- ✅ Beating vs drift hypothesis testing (`src/time_frequency/hypothesis_tests.py`) -- **BEATING dominates (4/4 tests)**
+- ✅ Page 152 filter derivation from nominal model -- Cyclitec mapping verified
 
 ---
 
@@ -322,22 +322,18 @@ plt.show()
 
 ## Current Development Focus
 
-**Phase 5 Extensions** (as of February 2026):
-- CMW frequency-domain FWHM design complete
-- Ormsby vs CMW comparisons complete for page 45, 152, and comb bank
-- Spacing/startidx integrated into core APIs (decimate-first approach, all verified)
-- Outstanding: CMW scalograms, ridge detection, beating vs drift, filter derivation
+**Phase 5 Extensions** (COMPLETE as of February 2026):
+- CMW frequency-domain FWHM design, Ormsby vs CMW comparisons
+- Spacing/startidx integrated into core APIs (decimate-first approach)
+- CMW scalograms (200 scales, 0.5-80 rad/yr, constant-Q)
+- Ridge detection (36 ridges, 100% coverage, mean drift near zero)
+- Beating vs drift: **BEATING dominates** (4/4 tests: stationary lines, 100% beat peaks, 100% FM-AM coupling, synthetic match)
+- Page 152 filter derivation: Cyclitec mapping verified, filters designed for cycle isolation not energy maximization
 
 **Supplementary Work** (not yet started):
 - Daily data reproduction (Phase 2A-0)
 - Sub-sample interpolation (Phase 2A)
 - Matrix Pencil Method parametric decomposition (Phase 2B)
-
-**Next Steps (Phase 5 remaining)**:
-1. CMW scalograms -- time-frequency heatmaps across full DJIA record
-2. Ridge detection and tracking -- extract frequency ridges from scalogram
-3. Beating vs drift hypothesis testing -- distinguish multi-line interference from frequency drift
-4. Page 152 filter derivation -- explain how Hurst chose the 6 filter frequencies
 
 ---
 
