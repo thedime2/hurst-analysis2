@@ -274,7 +274,6 @@ offsets = {
 }
 
 # Scaling factors for each signal (adjust amplitude for visibility)
-# Tune these to match reference visual appearance
 scales = {
     'price': 1.0,     # Price in original units
     'lp1': 1.0,       # Same scale as price
@@ -324,7 +323,6 @@ for idx, (filt_output, filt_name, filt_num) in enumerate(zip(outputs, filter_nam
                linestyle='-', alpha=0.2)
 
     # Add filter number label on the left (using axes fraction coordinates)
-    # This puts label outside the plot area on the left
     ax.text(-0.08, (offsets[filt_name] - offsets['bp6']) / (offsets['price'] - offsets['bp6']),
             str(filt_num),
             transform=ax.transAxes,
@@ -354,9 +352,6 @@ ax.set_ylim(offsets['bp6'] - 50, offsets['price'] + 50)
 # Clean up y-axis (not needed since we have left labels)
 ax.set_yticks([])
 
-# No legend (labels are on the plot)
-# ax.legend(loc='upper right', fontsize=9, framealpha=0.9)
-
 plt.tight_layout()
 
 # Save
@@ -373,17 +368,17 @@ print("=" * 70)
 print("Plot Generation Complete")
 print("=" * 70)
 print()
+print("Output: page152_unified_layout.png")
+print()
 print("Next steps:")
-print("  1. Visually compare with reference image:")
+print("  1. Compare with reference images:")
 print("     - references/page_152/filter_decomposition_v2.png")
 print("     - references/page_152/filter_decomposition_filters2to5.png")
 print()
-print("  2. Adjust normalization and scaling if needed:")
-print("     - Modify 'scales' dictionary for amplitude adjustment")
-print("     - Modify 'offsets' for vertical spacing")
-print("     - Try different normalization methods (zscore vs minmax)")
+print("  2. BP-2 refinement results (Phase 2A):")
+print("     - Best match: spacing=7, startidx=2 (beat_score=0.594)")
+print("     - See: bp2_refinement/ folder for comparison plots")
 print()
-print("  3. Once layout matches, proceed to Part 2 parameter refinement")
+print("  3. Next: Apply refinement to BP-3 through BP-6")
 print()
 
-plt.show()
