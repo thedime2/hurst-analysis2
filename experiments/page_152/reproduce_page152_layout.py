@@ -260,17 +260,18 @@ def normalize_signal(sig, method='zscore'):
 
 print("Creating unified layout plot...")
 
-fig, ax = plt.subplots(figsize=(16, 10))
+fig, ax = plt.subplots(figsize=(16, 12))
 
 # Vertical offsets for each filter (in data units after normalization)
+# Price section compressed to ~10% of total height, filters get 90%
 offsets = {
-    'price': 0,      # Top (no offset)
-    'lp1': 0,        # Overlaid on price (same level)
-    'bp2': -100,     # First offset below
-    'bp3': -200,
-    'bp4': -300,
-    'bp5': -400,
-    'bp6': -500,
+    'price': 350,     # Top (compressed, near top of y-axis)
+    'lp1': 350,       # Overlaid on price (same level)
+    'bp2': 250,       # First filter offset below
+    'bp3': 150,
+    'bp4': 50,
+    'bp5': -50,
+    'bp6': -150,
 }
 
 # Scaling factors for each signal (adjust amplitude for visibility)
@@ -323,7 +324,9 @@ for idx, (filt_output, filt_name, filt_num) in enumerate(zip(outputs, filter_nam
                linestyle='-', alpha=0.2)
 
     # Add filter number label on the left (using axes fraction coordinates)
-    ax.text(-0.08, (offsets[filt_name] - offsets['bp6']) / (offsets['price'] - offsets['bp6']),
+    # Map data offset to axes coordinates (0=bottom, 1=top)
+    y_frac = (offsets[filt_name] - (offsets['bp6'] - 100)) / (offsets['price'] + 50 - (offsets['bp6'] - 100))
+    ax.text(-0.08, y_frac,
             str(filt_num),
             transform=ax.transAxes,
             fontsize=10, ha='center', va='center',
@@ -347,7 +350,7 @@ ax.grid(True, alpha=0.15, linestyle='-', linewidth=0.4, axis='x')
 ax.set_axisbelow(True)
 
 # Y-axis limits (leave some margin)
-ax.set_ylim(offsets['bp6'] - 50, offsets['price'] + 50)
+ax.set_ylim(offsets['bp6'] - 100, offsets['price'] + 50)
 
 # Clean up y-axis (not needed since we have left labels)
 ax.set_yticks([])
