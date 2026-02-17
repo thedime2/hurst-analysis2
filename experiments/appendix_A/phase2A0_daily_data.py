@@ -104,6 +104,9 @@ dates_dt = pd.to_datetime(dates)
 n_points = len(close_prices)
 total_years = (dates_dt[-1] - dates_dt[0]).days / 365.25
 FS_DAILY = n_points / total_years  # effective trading days per year
+# DF we want to filter ALL the data
+# DF tradings is just 365.25 days / 52 * 5
+FS_DAILY = 251 # 365.25 / 52 * 5 + holidays rounded up
 
 print(f"  Data range: {DATE_START} to {DATE_END}")
 print(f"  Data points: {n_points}")
@@ -167,7 +170,7 @@ print("Creating complex analytic filter kernels...")
 filters = create_filter_kernels(
     filter_specs=specs,
     fs=FS_DAILY,
-    filter_type='modulate',
+    filter_type='subtract',
     analytic=True
 )
 print(f"  Created {len(filters)} filters, kernel length: {filters[0]['nw']}")
@@ -179,9 +182,11 @@ print()
 
 print("Generating filter bank frequency response...")
 fig_response = plot_filter_bank_response(filters, fs=FS_DAILY)
+fig_response.show()
+plt.show()
 fig_response_path = os.path.join(script_dir, 'phase2A0_filter_response.png')
-fig_response.savefig(fig_response_path, dpi=150, bbox_inches='tight')
-plt.close(fig_response)
+#fig_response.savefig(fig_response_path, dpi=150, bbox_inches='tight')
+#plt.close(fig_response)
 print(f"  Saved: {fig_response_path}")
 print()
 
