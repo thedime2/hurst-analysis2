@@ -14,6 +14,10 @@ from .cmw import (
     apply_cmw_bank,
     FWHM_TO_SIGMA,
 )
+from .morse import (
+    morse_freq_domain,
+    apply_morse,
+)
 
 from .scalogram import compute_scalogram
 from .ridge_detection import (
@@ -34,6 +38,8 @@ __all__ = [
     'apply_cmw',
     'apply_cmw_bank',
     'FWHM_TO_SIGMA',
+    'morse_freq_domain',
+    'apply_morse',
     'compute_scalogram',
     'detect_ridges',
     'match_ridges_to_nominal',
