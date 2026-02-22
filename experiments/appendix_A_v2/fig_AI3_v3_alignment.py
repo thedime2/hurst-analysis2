@@ -8,46 +8,23 @@ Align our FC-1..FC-10 Ormsby comb filter outputs with the reference scan
 (figure_AI3_v2.png) and brute-force the decimation spacing + startidx
 to find the combination that best reproduces Hurst's visual dot pattern.
 
-HYPOTHESIS
-----------
-The "dotted" appearance of Hurst's AI-3 waveforms may represent actual
-discrete computed samples at decimated positions (one dot every N weeks),
-NOT a continuous dotted linestyle. If so, counting dot density in the
-reference image reveals the decimation spacing Hurst used.
+ALIGNMENT METHOD — PIXEL CALIBRATION
+-------------------------------------
+The reference image is displayed at its NATURAL aspect ratio (no stretch).
+Four pixel positions of known data points are identified in the image:
+  - CAL_WEEK0_PX / CAL_WEEK250_PX: pixel x of the "0" and "250" x-axis ticks
+  - CAL_FC1_ZERO_PX / CAL_FC10_ZERO_PX: pixel y of FC-1 and FC-10 zero lines
 
-WORKFLOW
---------
-  Step 1 — Alignment check (Figure 1):
-    Overlay our spacing=1 continuous waveform on the reference image.
-    Tune the IMG_* parameters below until FC tracks visually line up.
-
-  Step 2 — Dot counting (manual):
-    With alignment confirmed, count dots per full cycle for 2-3 FC tracks.
-    Example: FC-1 has period ~43 wk; if you count ~6 dots/cycle → spacing≈7.
-
-  Step 3 — Spacing brute-force (Figure 2):
-    Plot dots (no connecting lines) for spacing = SPACING_RANGE, startidx 0..2.
-    Identify which combination best matches the reference dot positions.
-
-  Step 4 — Best-match overlay (Figure 3):
-    Reference image + best spaced dots overlaid at full resolution.
-
-TUNABLE ALIGNMENT PARAMETERS (tune Step 1 first)
--------------------------------------------------
-  IMG_CROP_*   — crop fractions to remove borders/title/labels from scan
-  IMG_X_START  — week number at left edge of image's data region
-  IMG_X_END    — week number at right edge
-  IMG_Y_BOTTOM — data y-value at bottom of image's plot area
-  IMG_Y_TOP    — data y-value at top of image's plot area
-
-  Start with the default values and visually inspect Figure 1 overlay.
-  Adjust IMG_X_START/END to slide/stretch horizontally.
-  Adjust IMG_Y_BOTTOM/TOP to slide/stretch vertically.
+From these 4 values the coordinate mapping is computed automatically:
+  pixel_x = CAL_WEEK0_PX + week * px_per_week
+  pixel_y = a * data_y + b
+The imshow extent is derived so that our data coordinate system aligns
+perfectly with the image's data area. The image is never distorted.
 
 Figures produced:
-  fig_AI3_align_check.png        — alignment verification overlay
-  fig_AI3_align_spacing_grid.png — brute-force spacing grid (dots only)
-  fig_AI3_align_best.png         — reference + best-match spaced dots
+  fig_AI3_align_check.png        -- alignment verification overlay
+  fig_AI3_align_spacing_grid.png -- brute-force spacing grid (dots only)
+  fig_AI3_align_best.png         -- reference + best-match spaced dots
 
 Reference: J.M. Hurst, The Profit Magic of Stock Transaction Timing,
            Appendix A, Figure AI-3, p.193
@@ -81,49 +58,56 @@ N_DISPLAY  = 10       # FC-1 .. FC-10
 SPACING    = 4.5      # vertical distance between track zero-lines
 TARGET_AMP = 2.0      # normal track half-amplitude
 BIG_AMP    = 4.0      # large track half-amplitude
-BIG_THRESH = 1.7      # RMS ratio to trigger ±4 scale
+BIG_THRESH = 1.7      # RMS ratio to trigger +/-4 scale
 
 # ============================================================================
-# ALIGNMENT PARAMETERS — TUNE THESE (Step 1)
+# ALIGNMENT — PIXEL CALIBRATION
 # ============================================================================
+# Identify these 4 pixel positions in the reference image (use an image editor).
+# The script computes the full coordinate mapping from them automatically.
+#
+# X calibration: pixel x of the "0" and "250" ticks on the x-axis
+# Y calibration: pixel y of the FC-1 and FC-10 zero lines
 
-# --- Image crop: fraction of image W or H to remove from each edge ---
-# Removes the outer border/title/axis-label margin of the scanned image.
-# Increase to crop more; decrease to crop less.
-IMG_CROP_L = 0.055   # fraction to remove from left   (y-axis label area)
-IMG_CROP_R = 0.015   # fraction to remove from right  (right margin)
-IMG_CROP_T = 0.065   # fraction to remove from top    (title area)
-IMG_CROP_B = 0.060   # fraction to remove from bottom (x-axis label + WKS label)
+CAL_WEEK0_PX     = 293+48  #493     # pixel x of the "0" x-axis tick  (measured from gridlines)
+CAL_WEEK250_PX   = 1813    # pixel x of the "250" x-axis tick (measured from gridlines)
+CAL_FC1_ZERO_PX  = 558     # pixel y of FC-1 zero line (detected, darkness=0.004)
+CAL_FC10_ZERO_PX = 3150    # pixel y of FC-10 zero line (558 + 9*289, from uniform spacing)
 
-# --- Horizontal data mapping: week numbers at left/right of cropped image ---
-# IMG_X_START = week number aligned with left edge of cropped image
-# IMG_X_END   = week number aligned with right edge of cropped image
-IMG_X_START = -2.0    # typically near 0 (left axis tick)
-IMG_X_END   = 270.0   # last visible data column in image (~267-275 weeks)
+# Per-track vertical offsets in DATA-Y UNITS (positive = shift track UP in plot).
+# FC-1..5 are locked at 0.0 (already aligned).
+# FC-6..10 are tunable to account for non-uniform spacing in the scan.
+# Measured from image scan: actual_pixel vs expected_pixel at uniform 288px spacing.
 
-# --- Vertical data mapping: data-y at bottom/top of cropped image ---
-# The image shows FC-1 at top (offset = (N-1)*SPACING) and FC-10 at bottom (offset=0).
-# Set these to match what our coordinate system shows at the top/bottom of the frame.
-IMG_Y_TOP    = (N_DISPLAY - 0.35) * SPACING   # data-y at top of image
-IMG_Y_BOTTOM = -SPACING * 0.65                # data-y at bottom of image
+# 7 + higher = vertical up
+
+CAL_FC_Y_OFFSETS = [
+    0.0,    # FC-1  (locked)
+    0.0,    # FC-2  (locked)
+    0.0,    # FC-3  (locked)
+    0.0,    # FC-4  (locked)
+    0.0,    # FC-5  (locked)
+   +1.10,   # FC-6  (actual ~2011px vs expected 1998, +13px lower)
+   +2.11,   # FC-7  (actual ~2293px vs expected 2286, +7px lower)
+   +4.40,   # FC-8  (actual ~2556px vs expected 2574, -18px higher)
+   +5.50,   # FC-9  (actual ~2849px vs expected 2862, -13px higher)
+   +5.55,   # FC-10 (actual ~3163px vs expected 3150, +13px lower)
+]
 
 # ============================================================================
 # BRUTE-FORCE SPACING PARAMETERS (Step 3)
 # ============================================================================
 
-# Decimation spacings to test (weeks between computed samples)
-SPACING_RANGE = [3, 4, 5, 6, 7, 8, 10, 12]
-
-# Start indices to test (phase offset within first spacing-period)
-# 0 = first data point, 1 = second data point, etc.
+SPACING_RANGE  = [3, 4, 5, 6, 7, 8, 10, 12]
 STARTIDX_RANGE = [0, 1, 2]
+BEST_SPACING   = 7
+BEST_STARTIDX  = 0
+DOT_SIZE       = 3.0
 
-# Best spacing+startidx to highlight in Figure 3 (set after inspecting Figure 2)
-BEST_SPACING  = 7
-BEST_STARTIDX = 0
 
-# Dot size for spaced outputs (in points)
-DOT_SIZE = 3.0
+def track_y(i):
+    """Data-y position of track i's zero line, including per-track offset."""
+    return (N_DISPLAY - 1 - i) * SPACING + CAL_FC_Y_OFFSETS[i]
 
 
 # ============================================================================
@@ -167,72 +151,121 @@ for i in range(N_DISPLAY):
 
 
 # ============================================================================
-# LOAD AND CROP REFERENCE IMAGE
+# LOAD REFERENCE IMAGE + COMPUTE COORDINATE MAPPING
 # ============================================================================
 
-def load_cropped_ref():
+def load_ref_image():
     if not os.path.exists(REF_IMAGE):
         return None
-    img = mpimg.imread(REF_IMAGE)
-    h, w = img.shape[:2]
-    c_l = int(IMG_CROP_L * w)
-    c_r = int((1 - IMG_CROP_R) * w)
-    c_t = int(IMG_CROP_T * h)
-    c_b = int((1 - IMG_CROP_B) * h)
-    return img[c_t:c_b, c_l:c_r]
+    return mpimg.imread(REF_IMAGE)
 
 
-ref_cropped = load_cropped_ref()
-if ref_cropped is None:
+ref_img = load_ref_image()
+
+# Data coordinate system:
+#   x = week number (0 .. n_weeks-1)
+#   y = FC-10 zero line at 0, FC-1 zero line at (N_DISPLAY-1)*SPACING = 40.5
+FC1_DATA_Y  = (N_DISPLAY - 1) * SPACING   # 40.5
+FC10_DATA_Y = 0.0
+
+if ref_img is None:
     print(f"WARNING: Reference image not found: {REF_IMAGE}")
     print("Figures 1 and 3 will be skipped.")
+    IMG_EXTENT   = None
+    IMG_PANEL_W  = 10.5
+    IMG_PANEL_H  = 13.0
+    PLOT_XLIM    = (-5, n_weeks + 5)
+    PLOT_YLIM    = (-SPACING, FC1_DATA_Y + SPACING)
+else:
+    img_h, img_w = ref_img.shape[:2]
+    pixel_ar     = img_w / img_h
+
+    # --- X mapping: pixel_x = CAL_WEEK0_PX + week * px_per_week ---
+    px_per_week = (CAL_WEEK250_PX - CAL_WEEK0_PX) / 250.0
+
+    # --- Y mapping: pixel_y = a * data_y + b ---
+    #   FC-10 (data_y=0)    -> pixel_y = CAL_FC10_ZERO_PX  => b = CAL_FC10_ZERO_PX
+    #   FC-1  (data_y=40.5) -> pixel_y = CAL_FC1_ZERO_PX   => a = (FC1_px - FC10_px) / 40.5
+    b_y = CAL_FC10_ZERO_PX
+    a_y = (CAL_FC1_ZERO_PX - CAL_FC10_ZERO_PX) / FC1_DATA_Y   # negative
+
+    # Image edges in data coordinates:
+    x_left   = (0      - CAL_WEEK0_PX) / px_per_week
+    x_right  = (img_w  - CAL_WEEK0_PX) / px_per_week
+    y_top    = (0      - b_y) / a_y     # pixel 0 = top of image
+    y_bottom = (img_h  - b_y) / a_y     # pixel img_h = bottom of image
+
+    IMG_EXTENT  = [x_left, x_right, y_bottom, y_top]
+    IMG_PANEL_W = 10.5
+    IMG_PANEL_H = IMG_PANEL_W / pixel_ar   # match image AR => no distortion
+
+    # Plot limits: show our full data range, clipped to roughly the image
+    PLOT_XLIM = (x_left, min(x_right, n_weeks + 5))
+    PLOT_YLIM = (y_bottom, y_top)
+
+    print(f"Image: {img_w} x {img_h} px  |  AR = {pixel_ar:.3f}")
+    print(f"Calibration: week0@{CAL_WEEK0_PX}px  week250@{CAL_WEEK250_PX}px  "
+          f"-> {px_per_week:.2f} px/wk")
+    print(f"Calibration: FC1@{CAL_FC1_ZERO_PX}px  FC10@{CAL_FC10_ZERO_PX}px  "
+          f"-> {abs(a_y):.2f} px/data-y-unit")
+    print(f"Image extent in data coords: "
+          f"x=[{x_left:.1f}, {x_right:.1f}]  y=[{y_bottom:.1f}, {y_top:.1f}]")
+    print(f"Figure panel: {IMG_PANEL_W:.1f} x {IMG_PANEL_H:.1f} in  (no distortion)")
 
 
 # ============================================================================
-# HELPER: draw our waveform on ax (continuous dotted, spacing=1)
+# HELPER FUNCTIONS
 # ============================================================================
 
-def draw_dense_waveform(ax, alpha_line=0.85, linestyle=':', lw=0.85):
-    for i in range(N_DISPLAY):
-        offset = (N_DISPLAY - 1 - i) * SPACING
-        sig    = outputs_dense[i]['signal'][s_idx:e_idx].real * scale_factors[i]
-        ax.axhline(offset, color='#888888', linewidth=0.4, zorder=1)
-        ax.plot(weeks, sig + offset, linestyle=linestyle, color='black',
-                linewidth=lw, alpha=alpha_line, zorder=3)
-        # FC label
-        ax.text(-4, offset, f'FC-{i+1}', fontsize=6.5, ha='right',
-                va='center', color='navy', zorder=5)
+_cmap  = plt.colormaps['tab10']
+track_colors = [_cmap(i / N_DISPLAY) for i in range(N_DISPLAY)]
 
-    ax.axvline(0,           color='black', linewidth=0.6, linestyle='--', zorder=2)
-    ax.axvline(n_weeks - 1, color='black', linewidth=0.6, linestyle='--', zorder=2)
-    ax.set_xlim(IMG_X_START - 1, IMG_X_END + 1)
-    ax.set_ylim(IMG_Y_BOTTOM, IMG_Y_TOP)
+
+def draw_image_bg(ax, alpha=0.50):
+    """Draw the reference image as background, mapped to data coordinates."""
+    if ref_img is not None and IMG_EXTENT is not None:
+        ax.imshow(ref_img, extent=IMG_EXTENT, aspect='auto',
+                  alpha=alpha, zorder=0)
+
+
+def setup_axes(ax, show_fc_labels=True):
+    """Set standard axis limits, ticks, and gridlines."""
+    ax.set_xlim(PLOT_XLIM)
+    ax.set_ylim(PLOT_YLIM)
     ax.set_xticks(list(range(0, n_weeks + 1, 25)))
     ax.set_xticklabels([str(x) if x <= 250 else '' for x in range(0, n_weeks + 1, 25)],
                         fontsize=7)
-    ax.set_yticks([(N_DISPLAY - 1 - i) * SPACING for i in range(N_DISPLAY)])
-    ax.set_yticklabels([f'FC-{i+1}' for i in range(N_DISPLAY)], fontsize=8)
+    if show_fc_labels:
+        ax.set_yticks([track_y(i) for i in range(N_DISPLAY)])
+        ax.set_yticklabels([f'FC-{i+1}' for i in range(N_DISPLAY)], fontsize=8)
+    else:
+        ax.set_yticks([])
     ax.set_xlabel('WKS.', fontsize=9)
     ax.grid(True, axis='x', alpha=0.15, color='black', linewidth=0.3)
 
 
-def draw_image_bg(ax, alpha=0.50):
-    if ref_cropped is not None:
-        ax.imshow(ref_cropped,
-                  extent=[IMG_X_START, IMG_X_END, IMG_Y_BOTTOM, IMG_Y_TOP],
-                  aspect='auto', alpha=alpha, zorder=0)
+def draw_dense_waveform(ax, alpha_line=0.85, linestyle=':', lw=0.85):
+    """Draw our spacing=1 continuous waveforms for all tracks."""
+    for i in range(N_DISPLAY):
+        offset = track_y(i)
+        sig    = outputs_dense[i]['signal'][s_idx:e_idx].real * scale_factors[i]
+        ax.axhline(offset, color='#888888', linewidth=0.4, zorder=1)
+        ax.plot(weeks, sig + offset, linestyle=linestyle, color='black',
+                linewidth=lw, alpha=alpha_line, zorder=3)
+        ax.text(-4, offset, f'FC-{i+1}', fontsize=6.5, ha='right',
+                va='center', color='navy', zorder=5)
+    ax.axvline(0,           color='black', linewidth=0.6, linestyle='--', zorder=2)
+    ax.axvline(n_weeks - 1, color='black', linewidth=0.6, linestyle='--', zorder=2)
+    setup_axes(ax, show_fc_labels=True)
 
 
 # ============================================================================
 # FIGURE 1: ALIGNMENT CHECK
-# Two panels: (left) our dense dotted waveform alone;
-#             (right) reference image + our waveform overlaid.
-# Inspect the right panel and tune IMG_* parameters above until they align.
 # ============================================================================
 
 print("\nGenerating Figure 1: alignment check...")
 
-fig1, axes1 = plt.subplots(1, 2, figsize=(22, 13),
+fig1, axes1 = plt.subplots(1, 2, figsize=(IMG_PANEL_W * 2, IMG_PANEL_H),
                             gridspec_kw={'wspace': 0.06})
 
 # Left: our waveform only
@@ -246,15 +279,15 @@ ax_r = axes1[1]
 draw_image_bg(ax_r, alpha=0.60)
 draw_dense_waveform(ax_r, alpha_line=0.70, linestyle='-')
 ax_r.set_title(
-    f'Reference Image (alpha=0.60) + Our Waveform (alpha=0.70)\n'
-    f'Crop L={IMG_CROP_L} R={IMG_CROP_R} T={IMG_CROP_T} B={IMG_CROP_B}  |  '
-    f'X=[{IMG_X_START},{IMG_X_END}]  Y=[{IMG_Y_BOTTOM:.1f},{IMG_Y_TOP:.1f}]',
-    fontsize=9, fontweight='bold'
+    f'Reference Image + Our Waveform\n'
+    f'CAL: wk0@{CAL_WEEK0_PX}px  wk250@{CAL_WEEK250_PX}px  '
+    f'FC1@{CAL_FC1_ZERO_PX}px  FC10@{CAL_FC10_ZERO_PX}px',
+    fontsize=8, fontweight='bold'
 )
 
 fig1.suptitle(
     f'AI-3 Alignment Check  |  {DATE_DISPLAY_START} to {DATE_DISPLAY_END}\n'
-    f'Tune IMG_CROP_* and IMG_X/Y_* parameters at top of script until tracks align.',
+    f'Tune CAL_* pixel positions at top of script until tracks align.',
     fontsize=11, fontweight='bold'
 )
 out1 = os.path.join(SCRIPT_DIR, 'fig_AI3_align_check.png')
@@ -265,16 +298,12 @@ print(f"  Saved: {out1}")
 
 # ============================================================================
 # FIGURE 2: SPACING BRUTE-FORCE GRID
-# Rows = spacings, columns = startidx values.
-# Each panel shows the reference image at 45% opacity behind
-# our spaced Ormsby dots (no connecting lines).
 # ============================================================================
 
 print("\nGenerating Figure 2: spacing brute-force grid...")
 
 from src.filters import design_hurst_comb_bank, create_filter_kernels, apply_filter_bank
 
-# Redesign filter bank using the same parameters
 specs_bank   = design_hurst_comb_bank(
     n_filters=N_DISPLAY, w1_start=7.2, w_step=0.2,
     passband_width=0.2, skirt_width=0.3,
@@ -283,13 +312,12 @@ specs_bank   = design_hurst_comb_bank(
 filters_bank = create_filter_kernels(specs_bank, fs=FS_WEEKLY,
                                       filter_type='modulate', analytic=True)
 
-# Cache applied results keyed by (spacing, startidx)
 print("  Applying filter bank for each (spacing, startidx) combination...")
 results_cache = {}
 for sp in SPACING_RANGE:
     for si in STARTIDX_RANGE:
         if si >= sp:
-            continue   # startidx must be < spacing
+            continue
         key = (sp, si)
         result = apply_filter_bank(close, filters_bank, fs=FS_WEEKLY,
                                     mode='reflect', spacing=sp, startidx=si,
@@ -303,18 +331,11 @@ n_si = len(STARTIDX_RANGE)
 fig2, axes2 = plt.subplots(n_sp, n_si, figsize=(n_si * 9, n_sp * 3.8),
                             gridspec_kw={'hspace': 0.45, 'wspace': 0.06})
 
-# Normalize filter outputs using same scale factors
-# For each track, use the same amplitude normalisation as spacing=1
-
-_cmap  = plt.colormaps['tab10']
-track_colors = [_cmap(i / N_DISPLAY) for i in range(N_DISPLAY)]
-
 for row, sp in enumerate(SPACING_RANGE):
     for col, si in enumerate(STARTIDX_RANGE):
         ax  = axes2[row, col] if n_sp > 1 else axes2[col]
         key = (sp, si)
 
-        # Image background
         draw_image_bg(ax, alpha=0.45)
 
         if key not in results_cache:
@@ -325,21 +346,14 @@ for row, sp in enumerate(SPACING_RANGE):
         outputs = results_cache[key]
 
         for i in range(N_DISPLAY):
-            offset = (N_DISPLAY - 1 - i) * SPACING
-            sig    = outputs[i]['signal'][s_idx:e_idx].real
-
-            # Normalise with same scale factor as spacing=1
-            sig_scaled = sig * scale_factors[i]
-
-            # Non-NaN positions only (the spaced dots)
-            valid = ~np.isnan(sig_scaled)
-            x_pts = weeks[valid]
-            y_pts = (sig_scaled[valid]) + offset
+            offset = track_y(i)
+            sig    = outputs[i]['signal'][s_idx:e_idx].real * scale_factors[i]
+            valid  = ~np.isnan(sig)
+            x_pts  = weeks[valid]
+            y_pts  = sig[valid] + offset
 
             ax.scatter(x_pts, y_pts, s=DOT_SIZE, color=track_colors[i],
                        alpha=0.90, zorder=3, linewidths=0)
-
-            # Zero-line
             ax.axhline(offset, color='#AAAAAA', linewidth=0.35, zorder=1)
 
         ax.axvline(0,           color='black', linewidth=0.5, linestyle='--', zorder=2)
@@ -347,11 +361,9 @@ for row, sp in enumerate(SPACING_RANGE):
 
         n_dots = sum(np.sum(~np.isnan(results_cache[key][i]['signal'][s_idx:e_idx].real))
                      for i in range(N_DISPLAY))
-        ax.set_xlim(IMG_X_START, IMG_X_END)
-        ax.set_ylim(IMG_Y_BOTTOM, IMG_Y_TOP)
-        ax.set_xticks(range(0, int(IMG_X_END) + 1, 50))
-        ax.set_xticklabels([str(x) for x in range(0, int(IMG_X_END) + 1, 50)], fontsize=6)
-        ax.set_yticks([])
+        setup_axes(ax, show_fc_labels=False)
+        ax.set_xticks(range(0, n_weeks + 1, 50))
+        ax.set_xticklabels([str(x) for x in range(0, n_weeks + 1, 50)], fontsize=6)
         ax.tick_params(labelsize=6)
 
         ax.set_title(
@@ -379,8 +391,6 @@ print(f"  Saved: {out2}")
 
 # ============================================================================
 # FIGURE 3: BEST-MATCH OVERLAY
-# Reference image + best (spacing, startidx) overlaid at full resolution.
-# Change BEST_SPACING / BEST_STARTIDX at top of file after inspecting Fig 2.
 # ============================================================================
 
 print(f"\nGenerating Figure 3: best-match overlay "
@@ -388,7 +398,6 @@ print(f"\nGenerating Figure 3: best-match overlay "
 
 key_best = (BEST_SPACING, BEST_STARTIDX)
 if key_best not in results_cache:
-    # Recompute if needed (e.g. startidx=0 was skipped)
     result_best = apply_filter_bank(close, filters_bank, fs=FS_WEEKLY,
                                      mode='reflect', spacing=BEST_SPACING,
                                      startidx=BEST_STARTIDX, interp='none')
@@ -396,51 +405,36 @@ if key_best not in results_cache:
 else:
     outputs_best = results_cache[key_best]
 
-fig3, axes3 = plt.subplots(1, 2, figsize=(22, 13),
+fig3, axes3 = plt.subplots(1, 2, figsize=(IMG_PANEL_W * 2, IMG_PANEL_H),
                             gridspec_kw={'wspace': 0.06})
 
 for panel, (ax, img_alpha, our_alpha, title_sfx) in enumerate(zip(
         axes3,
-        [0.0, 0.55],   # image alpha: left=no image, right=with image
-        [0.88, 0.92],  # our dot alpha
+        [0.0, 0.55],
+        [0.88, 0.92],
         ['Our Dots Only', 'Reference Image + Our Dots'])):
 
     if img_alpha > 0:
         draw_image_bg(ax, alpha=img_alpha)
 
     for i in range(N_DISPLAY):
-        offset = (N_DISPLAY - 1 - i) * SPACING
+        offset = track_y(i)
         sig    = outputs_best[i]['signal'][s_idx:e_idx].real * scale_factors[i]
-
         valid  = ~np.isnan(sig)
         x_pts  = weeks[valid]
         y_pts  = sig[valid] + offset
 
-        # Dots with cross-hair lines (helps visual alignment)
         ax.scatter(x_pts, y_pts, s=7, color=track_colors[i],
                    alpha=our_alpha, zorder=4, linewidths=0)
-
-        # Thin connecting line (optional, toggle off to see pure dots)
         ax.plot(weeks[valid], sig[valid] + offset, '-',
                 color=track_colors[i], linewidth=0.4, alpha=0.35, zorder=3)
-
-        # Zero-line
         ax.axhline(offset, color='#888888', linewidth=0.35, zorder=1)
-
-        # Track label
-        ax.text(IMG_X_START + 1, offset, f'FC-{i+1}', fontsize=6.5,
+        ax.text(PLOT_XLIM[0] + 3, offset, f'FC-{i+1}', fontsize=6.5,
                 ha='left', va='center', color=track_colors[i], zorder=5)
 
     ax.axvline(0,           color='black', linewidth=0.6, linestyle='--', zorder=2)
     ax.axvline(n_weeks - 1, color='black', linewidth=0.6, linestyle='--', zorder=2)
-    ax.set_xlim(IMG_X_START, IMG_X_END)
-    ax.set_ylim(IMG_Y_BOTTOM, IMG_Y_TOP)
-    ax.set_xticks(range(0, int(IMG_X_END) + 1, 25))
-    ax.set_xticklabels([str(x) if x % 50 == 0 else '' for x in range(0, int(IMG_X_END)+1, 25)],
-                        fontsize=7)
-    ax.set_yticks([])
-    ax.set_xlabel('WKS.', fontsize=9)
-    ax.grid(True, axis='x', alpha=0.12, linewidth=0.3)
+    setup_axes(ax, show_fc_labels=False)
     ax.set_title(
         f'spacing={BEST_SPACING}  startidx={BEST_STARTIDX}  '
         f'nw_dec={NW_WEEKLY//BEST_SPACING}  |  {title_sfx}',
@@ -460,7 +454,7 @@ print(f"  Saved: {out3}")
 
 
 # ============================================================================
-# DOT DENSITY SUMMARY (helps manual counting)
+# DOT DENSITY SUMMARY
 # ============================================================================
 
 print()
@@ -477,10 +471,6 @@ for i in range(N_DISPLAY):
     pk, _ = _fp(sig, distance=min_d)
     print(f"  FC-{i+1:2d}  {fc:>8.1f}  {T_wk:>7.1f}  {len(pk):>6}")
 
-print()
-print("To estimate Hurst's spacing:")
-print("  Count dots per full cycle for 2-3 FC tracks in the reference image.")
-print("  spacing ~= T_wk / (dots_per_cycle)")
 print()
 print("Output files:")
 for out in [out1, out2, out3]:
