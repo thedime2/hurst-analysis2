@@ -594,6 +594,238 @@ def prony_sliding_lse(analytic_signal, fs, f_center, n_periods=1.5, step_frac=0.
 
 
 # ============================================================================
+# MULTI-MODE ANALYSIS: MODE COUNTING, MPM, BEAT SPECTRA, RECOVERY
+# ============================================================================
+
+def sv_profile(z, L_pencil=None):
+    """
+    Singular-value profile of the Hankel data matrix of z.
+
+    The SV decay pattern reveals the number of sinusoidal components:
+    M sinusoids → M large singular values, then a sharp drop to the
+    noise floor.  Works on real or complex input.
+
+    Parameters
+    ----------
+    z : array-like (complex or real)
+    L_pencil : int, optional
+        Pencil parameter (default: N // 3)
+
+    Returns
+    -------
+    s : ndarray   Singular values, sorted descending.
+    """
+    z = np.asarray(z, dtype=complex)
+    N = len(z)
+    if N < 4:
+        return np.array([])
+    if L_pencil is None:
+        L_pencil = max(4, N // 3)
+    L_pencil = min(L_pencil, N - 2)
+    row = z[:N - L_pencil]
+    col = z[N - L_pencil - 1:]
+    Y0  = hankel(row, col)[:, :-1]   # (N-L) × L
+    _, s, _ = np.linalg.svd(Y0, full_matrices=False)
+    return s
+
+
+def estimate_n_modes(z, L_pencil=None, energy_frac=0.99,
+                     min_modes=1, max_modes=6):
+    """
+    Estimate number of sinusoidal components from SV energy profile.
+
+    Counts how many singular values are needed to capture `energy_frac`
+    of the total SV² energy.  Clipped to [min_modes, max_modes].
+    """
+    s = sv_profile(z, L_pencil)
+    if len(s) == 0:
+        return min_modes
+    s2  = s ** 2
+    cum = np.cumsum(s2) / (s2.sum() + 1e-30)
+    n   = int(np.searchsorted(cum, energy_frac)) + 1
+    return int(np.clip(n, min_modes, max_modes))
+
+
+def mpm_multimode(z, n_modes, L_pencil=None, fs=1.0):
+    """
+    Multi-mode Matrix Pencil Method.
+
+    Fits   z[n] ≈ Σ_k  A_k · exp(j ω_k n)   (ω_k in rad/sample)
+
+    and returns amplitude, frequency, and phase for each mode.
+    Poles are projected onto the unit circle before amplitude
+    estimation so that damping does not distort the least-squares fit.
+
+    Parameters
+    ----------
+    z : array-like (complex)
+        Complex analytic signal, e.g. a bandpass filter output.
+    n_modes : int
+        Number of sinusoidal modes to extract.
+    L_pencil : int, optional
+        Pencil parameter (default: max(2*n_modes+2, N//3)).
+    fs : float
+        Sampling rate (samples/year) for rad/yr output.
+
+    Returns
+    -------
+    components : list of dict, sorted by amplitude (largest first).
+        Keys: freq_radyr, amplitude, phase_rad, damping, pole
+    """
+    z = np.asarray(z, dtype=complex)
+    N = len(z)
+    if N < 4 * n_modes:
+        return []
+    if L_pencil is None:
+        L_pencil = max(2 * n_modes + 2, N // 3)
+    L_pencil = min(L_pencil, N - n_modes - 1)
+
+    row = z[:N - L_pencil]
+    col = z[N - L_pencil - 1:]
+    Y   = hankel(row, col)           # (N-L) × (L+1)
+    Y0, Y1 = Y[:, :-1], Y[:, 1:]    # (N-L) × L each
+
+    try:
+        U, s, Vh = np.linalg.svd(Y0, full_matrices=False)
+    except np.linalg.LinAlgError:
+        return []
+    if s[0] < 1e-12:
+        return []
+
+    n_m  = min(n_modes, len(s))
+    U_m  = U[:, :n_m]
+    s_m  = s[:n_m]
+    Vh_m = Vh[:n_m, :]
+
+    # Pencil matrix Z = pinv(Y0_m) @ Y1
+    Y0_pinv = Vh_m.conj().T @ np.diag(1.0 / s_m) @ U_m.conj().T  # L×(N-L)
+    Z_mat   = Y0_pinv @ Y1                                          # L×L
+
+    try:
+        poles_all = np.linalg.eigvals(Z_mat)
+    except np.linalg.LinAlgError:
+        return []
+
+    # Keep n_m poles with largest |magnitude| (closest to unit circle)
+    idx   = np.argsort(-np.abs(poles_all))[:n_m]
+    poles = poles_all[idx]
+
+    # Project poles to unit circle and solve for complex amplitudes
+    omegas = np.angle(poles)                         # rad/sample (signed)
+    n_vec  = np.arange(N)
+    V      = np.exp(1j * np.outer(n_vec, omegas))   # N × n_m  (unit-circle)
+    try:
+        A, _, _, _ = np.linalg.lstsq(V, z, rcond=None)
+    except np.linalg.LinAlgError:
+        return []
+
+    components = []
+    for k in range(n_m):
+        components.append({
+            'freq_radyr' : float(omegas[k]) * fs,
+            'amplitude'  : float(np.abs(A[k])),
+            'phase_rad'  : float(np.angle(A[k])),
+            'damping'    : float(np.log(np.abs(poles[k]) + 1e-30) * fs),
+            'pole'       : poles[k],
+        })
+
+    components.sort(key=lambda c: -c['amplitude'])
+    return components
+
+
+def envelope_beat_spectrum(z_analytic, fs, nfft_min=8192):
+    """
+    Power spectrum of the envelope AC component.
+
+    Peaks in this spectrum correspond to beat frequencies between pairs
+    of sinusoidal components captured by the filter:
+        Δω_beat = |ω_i − ω_j|   (rad/yr)
+
+    For a single pure sinusoid the envelope is flat → no AC peaks.
+    For two sinusoids separated by Δω the envelope oscillates at Δω.
+
+    Parameters
+    ----------
+    z_analytic : ndarray (complex)
+    fs         : float  (samples/year)
+    nfft_min   : int    (minimum FFT size; zero-padded for resolution)
+
+    Returns
+    -------
+    freqs_radyr : ndarray  (positive, rad/yr, starting near 0)
+    power_norm  : ndarray  (normalised so peak = 1)
+    """
+    env    = np.abs(z_analytic)
+    env_ac = env - env.mean()           # remove DC (mean amplitude)
+    nfft   = max(nfft_min, 4 * len(env_ac))
+    E      = np.fft.rfft(env_ac, n=nfft)
+    freqs  = np.fft.rfftfreq(nfft, d=1.0 / fs) * 2 * np.pi   # rad/yr
+    power  = np.abs(E) ** 2
+    pk     = power.max()
+    return freqs, power / (pk + 1e-30)
+
+
+def recover_band_sinusoids(z_analytic, spec, fs, n_modes=None, max_modes=4):
+    """
+    Full sinusoidal recovery pipeline for a complex analytic filter output.
+
+    Steps:
+      1. Estimate number of modes from SV profile (if n_modes is None).
+      2. Run multi-mode MPM on the full signal.
+      3. Flag components inside the filter stopband [f1, f4].
+      4. Reconstruct signal and compute SNR.
+
+    Parameters
+    ----------
+    z_analytic : ndarray (complex)
+    spec       : dict  (keys f1, f2, f3, f4, f_center — all rad/yr)
+    fs         : float (samples/year)
+    n_modes    : int or None
+    max_modes  : int
+
+    Returns
+    -------
+    result : dict
+        n_modes, components, in_band_components,
+        reconstruction, rms_error, rms_signal, snr_db
+    """
+    if n_modes is None:
+        n_modes = estimate_n_modes(z_analytic, max_modes=max_modes)
+
+    components = mpm_multimode(z_analytic, n_modes, fs=fs)
+
+    f1, f4  = spec['f1'], spec['f4']
+    in_band = [c for c in components
+               if f1 <= abs(c['freq_radyr']) <= f4]
+
+    # Reconstruct from all components
+    N     = len(z_analytic)
+    n_vec = np.arange(N)
+    if components:
+        z_rec = sum(
+            c['amplitude'] * np.exp(1j * (c['freq_radyr'] / fs * n_vec
+                                          + c['phase_rad']))
+            for c in components
+        )
+    else:
+        z_rec = np.zeros(N, dtype=complex)
+
+    rms_sig = float(np.sqrt(np.mean(np.abs(z_analytic) ** 2)))
+    rms_err = float(np.sqrt(np.mean(np.abs(z_analytic - z_rec) ** 2)))
+    snr_db  = 20.0 * np.log10(rms_sig / (rms_err + 1e-12))
+
+    return dict(
+        n_modes            = n_modes,
+        components         = components,
+        in_band_components = in_band,
+        reconstruction     = z_rec,
+        rms_error          = rms_err,
+        rms_signal         = rms_sig,
+        snr_db             = snr_db,
+    )
+
+
+# ============================================================================
 # PRINT SUMMARY
 # ============================================================================
 

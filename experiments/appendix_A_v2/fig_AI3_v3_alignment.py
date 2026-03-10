@@ -56,9 +56,8 @@ REF_IMAGE  = os.path.join(SCRIPT_DIR,
 
 N_DISPLAY  = 10       # FC-1 .. FC-10
 SPACING    = 4.5      # vertical distance between track zero-lines
-TARGET_AMP = 2.0      # normal track half-amplitude
-BIG_AMP    = 4.0      # large track half-amplitude
-BIG_THRESH = 1.7      # RMS ratio to trigger +/-4 scale
+TARGET_AMP = 2.5      # FC-1 target half-amplitude (sets the reference scale)
+AMP_BOOST  = 1.0     # global amplitude multiplier (>1 = louder, try 1.1-1.3)
 
 # ============================================================================
 # ALIGNMENT — PIXEL CALIBRATION
@@ -98,9 +97,9 @@ CAL_FC_Y_OFFSETS = [
 # BRUTE-FORCE SPACING PARAMETERS (Step 3)
 # ============================================================================
 
-SPACING_RANGE  = [3, 4, 5, 6, 7, 8, 10, 12]
+SPACING_RANGE  = [2, 3, 4, 5, 6, 7, 8, 10, 12]
 STARTIDX_RANGE = [0, 1, 2]
-BEST_SPACING   = 7
+BEST_SPACING   = 2
 BEST_STARTIDX  = 0
 DOT_SIZE       = 3.0
 
@@ -134,20 +133,18 @@ print("Done.")
 # COMPUTE PER-TRACK SCALE FACTORS (same logic as fig_AI3_v3.py)
 # ============================================================================
 
+# Compute FC-1's scale factor, then apply it to ALL tracks.
+# This preserves the natural amplitude ratios between filters —
+# tracks with more energy appear larger, matching Hurst's image.
 rms_vals = np.array([
     np.sqrt(np.mean(outputs_dense[i]['signal'][s_idx:e_idx].real ** 2))
     for i in range(N_DISPLAY)
 ])
-rms_vals    = np.where(rms_vals > 0, rms_vals, 1.0)
-median_rms  = np.median(rms_vals)
+rms_vals = np.where(rms_vals > 0, rms_vals, 1.0)
 
-scale_factors = []
-amp_limits    = []
-for i in range(N_DISPLAY):
-    ratio = rms_vals[i] / median_rms
-    amp   = BIG_AMP if ratio >= BIG_THRESH else TARGET_AMP
-    scale_factors.append(amp / (3.0 * rms_vals[i]))
-    amp_limits.append(amp)
+# FC-1 sets the reference: scale so its peaks reach ~TARGET_AMP
+fc1_scale = TARGET_AMP / (3.0 * rms_vals[0]) * AMP_BOOST
+scale_factors = [fc1_scale] * N_DISPLAY   # same scale for every track
 
 
 # ============================================================================
@@ -249,7 +246,7 @@ def draw_dense_waveform(ax, alpha_line=0.85, linestyle=':', lw=0.85):
     for i in range(N_DISPLAY):
         offset = track_y(i)
         sig    = outputs_dense[i]['signal'][s_idx:e_idx].real * scale_factors[i]
-        ax.axhline(offset, color='#888888', linewidth=0.4, zorder=1)
+        ax.axhline(offset, color='#444444', linewidth=0.5, linestyle='--', zorder=1)
         ax.plot(weeks, sig + offset, linestyle=linestyle, color='black',
                 linewidth=lw, alpha=alpha_line, zorder=3)
         ax.text(-4, offset, f'FC-{i+1}', fontsize=6.5, ha='right',
@@ -354,7 +351,7 @@ for row, sp in enumerate(SPACING_RANGE):
 
             ax.scatter(x_pts, y_pts, s=DOT_SIZE, color=track_colors[i],
                        alpha=0.90, zorder=3, linewidths=0)
-            ax.axhline(offset, color='#AAAAAA', linewidth=0.35, zorder=1)
+            ax.axhline(offset, color='#444444', linewidth=0.45, linestyle='--', zorder=1)
 
         ax.axvline(0,           color='black', linewidth=0.5, linestyle='--', zorder=2)
         ax.axvline(n_weeks - 1, color='black', linewidth=0.5, linestyle='--', zorder=2)
@@ -428,7 +425,7 @@ for panel, (ax, img_alpha, our_alpha, title_sfx) in enumerate(zip(
                    alpha=our_alpha, zorder=4, linewidths=0)
         ax.plot(weeks[valid], sig[valid] + offset, '-',
                 color=track_colors[i], linewidth=0.4, alpha=0.35, zorder=3)
-        ax.axhline(offset, color='#888888', linewidth=0.35, zorder=1)
+        ax.axhline(offset, color='#444444', linewidth=0.5, linestyle='--', zorder=1)
         ax.text(PLOT_XLIM[0] + 3, offset, f'FC-{i+1}', fontsize=6.5,
                 ha='left', va='center', color=track_colors[i], zorder=5)
 
