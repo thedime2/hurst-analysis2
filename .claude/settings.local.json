@@ -11,7 +11,10 @@
       "Bash(ls:*)",
       "Bash(python3:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mkdir -p \"c:/Users/dfennell/Dropbox/python/github/ha2/hurst-analysis2/src/pipeline\")",
+      "Bash(mkdir -p \"c:/Users/dfennell/Dropbox/python/github/ha2/hurst-analysis2/experiments/pipeline\")",
+      "Bash(grep -r \"0.376\\\\|0.479\\\\|0.598\\\\|1.506\\\\|14 weeks\\\\|amplitude.*growth\" /c/Users/dfennell/Dropbox/python/github/ha2/hurst-analysis2/prd --include=*.md)"
     ]
   }
 }

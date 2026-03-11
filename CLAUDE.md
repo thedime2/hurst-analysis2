@@ -185,7 +185,7 @@ Located in [references/page_152/](references/page_152/)
 - ✅ Page 45 reproduction (modulate and subtract methods)
 - ✅ Page 152 six-filter decomposition (3 rendering modes, 96.2% energy)
 - ✅ CMW comparison (96.6% energy)
-- ⬜ Explain WHY these 6 filter frequencies were chosen
+- ✅ Explained WHY these 6 filter frequencies were chosen (Phase 7, Part 15)
 
 ### Phase 5: Modern Extensions (COMPLETE)
 **Goal**: CMW scalograms, ridge detection, hypothesis testing
@@ -196,6 +196,36 @@ Located in [references/page_152/](references/page_152/)
 - ✅ Ridge detection and tracking (`src/time_frequency/ridge_detection.py`)
 - ✅ Beating vs drift hypothesis testing (`src/time_frequency/hypothesis_tests.py`) -- **BEATING dominates (4/4 tests)**
 - ✅ Page 152 filter derivation from nominal model -- Cyclitec mapping verified
+- ✅ Algorithmic filter derivation from spectral troughs -- 98.1% reconstruction
+- ✅ CMW envelope analysis of derived filters -- inter-cycle coupling confirmed
+
+### Phase 6: Modern Data Validation (COMPLETE)
+**Goal**: Confirm harmonic structure across 130 years and multiple indices
+- ✅ 6A: Daily DJIA 1921-1965 — spacing=0.3675, harmonics to N=56, R²=0.9998
+- ✅ 6B: 3 DJIA eras + 2 SPX periods — spacing within 0.7% of 0.3676, R²≥0.999
+- ✅ 6C: 130-year sliding window — 23 windows, spacing mean=0.3668, std=0.0015
+- ✅ 6E: Daily modern DJIA & SPX 1953-2025 — harmonics to N=79, R²=0.9999
+- **Verdict**: Harmonic structure is a permanent, market-wide phenomenon
+
+### Phase 7: Unified Theory Synthesis (COMPLETE)
+**Goal**: Explain the complete framework from spectrum to trading filters
+- ✅ 6-filter overlay on daily+weekly spectrum (energy partition 87/10/2/0.5/0.3/0.1%)
+- ✅ Trough dividers as natural group boundaries (half-integer harmonic indices)
+- ✅ Modulation model: 3 mechanisms explaining 1/w envelope
+- ✅ Inter-cycle coupling: envelope correlations 0.3-0.6, F4 leads F2 by 14 weeks
+- ✅ Algorithmic filter derivation from spectrum alone (98.1% reconstruction)
+- ✅ Cross-validation: 8 periods, 2 indices — w0 universal
+- See: `prd/hurst_unified_theory_v2.md`
+
+### Phase 10: Automated Nominal Model Pipeline (COMPLETE)
+**Goal**: End-to-end derivation from raw prices to nominal model
+- ✅ 10-stage pipeline in `src/pipeline/` (4 modules)
+- ✅ 3-method w0 estimation with sub-harmonic correction
+- ✅ Narrowband CMW resolves individual harmonics (79/79 confirmed in daily data)
+- ✅ 4-test validation suite (spectral, reconstruction, cycle count, envelope)
+- ✅ Automated 6-filter design from trough dividers
+- ✅ 6 visualization types including 3D time-frequency surfaces
+- See: `prd/nominal_model_pipeline.md`, `experiments/pipeline/`
 
 ---
 
@@ -322,16 +352,18 @@ plt.show()
 
 ## Current Development Focus
 
-**Phase 5 Extensions** (COMPLETE as of February 2026):
-- CMW frequency-domain FWHM design, Ormsby vs CMW comparisons
-- Spacing/startidx integrated into core APIs (decimate-first approach)
-- CMW scalograms (200 scales, 0.5-80 rad/yr, constant-Q)
-- Ridge detection (36 ridges, 100% coverage, mean drift near zero)
-- Beating vs drift: **BEATING dominates** (4/4 tests: stationary lines, 100% beat peaks, 100% FM-AM coupling, synthetic match)
-- Page 152 filter derivation: Cyclitec mapping verified, filters designed for cycle isolation not energy maximization
+**All core phases COMPLETE** (Phases 1-7, 10). The project has achieved its primary goal: faithful reproduction, validation, and extension of Hurst's spectral framework.
 
-**Supplementary Work** (not yet started):
-- Daily data reproduction (Phase 2A-0)
+**Key milestone (March 2026)**: Narrowband CMW resolves **79 individual harmonics** (N=2 to N=80) in daily DJIA data, extending the Nominal Model far beyond Hurst's 27-34 comb-derived lines.
+
+**Next steps** (not yet started):
+- Improve reconstruction R² by using CMW-confirmed lines (target >0.70)
+- Run pipeline on DJIA 1965-2025 and SPX 1985-2025 (multi-period validation)
+- Stage 10 CMW envelope analysis: modulation periods, inter-filter coupling
+- Investigate whether harmonics extend beyond N=80 with higher-frequency daily data
+- Backtest: can CMW-derived amplitudes and phases predict turning points?
+
+**Supplementary Work** (deferred):
 - Sub-sample interpolation (Phase 2A)
 - Matrix Pencil Method parametric decomposition (Phase 2B)
 
@@ -341,16 +373,21 @@ plt.show()
 
 - J.M. Hurst, *The Profit Magic of Stock Transaction Timing* (1970)
 - Project PRD: [prd/hurst_spectral_analysis_prd.md](prd/hurst_spectral_analysis_prd.md)
+- Unified Theory: [prd/hurst_unified_theory_v2.md](prd/hurst_unified_theory_v2.md)
+- Pipeline PRD: [prd/nominal_model_pipeline.md](prd/nominal_model_pipeline.md)
+- Insights Summary: [prd/insights_summary.md](prd/insights_summary.md)
 - Project README: [README.md](README.md)
 
 ---
 
 ## Notes for Future Sessions
 
-- The page 152 six-filter specifications in `experiments/page_152/reproduce_decomposition.py` are user-estimated from visual inspection of Hurst's graphics, NOT published values from the book. Refining these is an active research area.
+- The page 152 six-filter specifications in `experiments/page_152/reproduce_decomposition.py` are user-estimated from visual inspection of Hurst's graphics, NOT published values from the book. The automated filter design in `src/pipeline/filter_design.py` now derives these from trough dividers.
 
 - The Cyclitec PDF (`Dropbox/ebooks/jm-hurst-cycles-coursecyclitec-services-training-course_compress.pdf`) is a 1177-page scanned document with no extractable text. OCR would be needed for automated searching.
 
-- The 27-line nominal model in `data/processed/nominal_model.csv` spans 2.28-11.95 rad/yr. Lines below 3.5 rad/yr rely on Fourier peaks only (comb filters impractical at those frequencies).
+- The original 27-line nominal model in `data/processed/nominal_model.csv` spans 2.28-11.95 rad/yr (weekly comb bank + Fourier peaks). The narrowband CMW model extends this to 79 lines spanning 0.71-28.58 rad/yr.
+
+- The `src/pipeline/` module provides `derive_nominal_model()` for single-call pipeline execution and `design_narrowband_cmw_bank()` for individual harmonic resolution.
 
 - The project uses Python 3.13+ - ensure all code is compatible
