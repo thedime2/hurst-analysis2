@@ -411,11 +411,11 @@ Three comb bank designs implemented:
 
 Four validation tests:
 - 8A: Spectral consistency → 100% matched (PASS)
-- 8B: Reconstruction R² → 0.12 (FAIL — needs more lines, see below)
+- 8B: Reconstruction R² → 0.73 (PASS — 79 CMW lines + linear trend)
 - 8C: Cycle counting → 16 lines checked (PASS)
 - 8D: Envelope 1/w fit → R²=0.93 (PASS)
 
-**Known issue**: Reconstruction uses only 17 Fourier-derived lines. Using 79 CMW-confirmed lines should improve R² dramatically.
+**RESOLVED (March 2026)**: Reconstruction with 79 CMW-confirmed lines + linear trend achieves R² = 0.73 (exceeds 0.70 target). See `experiments/pipeline/test_reconstruction_79lines.py`.
 
 ### Phase D: Filter Design (Stage 9) — ✅ COMPLETE
 
@@ -466,10 +466,12 @@ Four validation tests:
 
 ## Remaining Work
 
-1. **Reconstruction R²**: Feed 79 CMW-confirmed lines into reconstruction test (target R² > 0.70)
-2. **Multi-period demo**: Run pipeline on DJIA 1965-2025 and SPX 1985-2025
-3. **Stage 10 (CMW envelope analysis)**: Extract modulation periods and inter-filter coupling from narrowband bank
-4. **Export**: Save derived filter specs in machine-readable format for trading system integration
+1. ✅ **Reconstruction R²**: R² = 0.73 with 79 CMW lines + linear trend (target >0.70 met)
+2. ✅ **Multi-period demo**: Pipeline validated on DJIA 1965-2025 (w0=0.3045) and SPX 1985-2025 (w0=0.3140)
+3. ✅ **Stage 10 (CMW envelope analysis)**: Modulation index mean=0.91, inter-filter coupling r>0.95 (adjacent), 56% show 17.1yr beat
+4. ✅ **Export**: Filter specs saved to `data/processed/` (JSON/CSV)
+5. ✅ **Harmonics beyond N=80**: 428/428 confirmed (N=2-400), 1/w envelope slope=-0.79, R²=0.995
+6. ✅ **Market extremes**: 5 events analyzed — sync confirms but doesn't predict bottoms (0 weeks lead)
 
 ---
 

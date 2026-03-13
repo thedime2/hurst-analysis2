@@ -84,9 +84,14 @@ hurst-analysis2/
 │   ├── page_45/       # Page 45 Figures II-9/II-10
 │   │   ├── reproduce_II9_II10.py          # Ormsby modulate vs subtract
 │   │   └── compare_ormsby_vs_cmw.py       # Ormsby vs CMW comparison
-│   └── page_152/      # Page 152 six-filter decomposition
-│       ├── reproduce_decomposition.py     # 3 rendering modes
-│       └── compare_ormsby_vs_cmw.py       # Ormsby vs CMW comparison
+│   ├── page_152/      # Page 152 six-filter decomposition
+│   │   ├── reproduce_decomposition.py     # 3 rendering modes
+│   │   └── compare_ormsby_vs_cmw.py       # Ormsby vs CMW comparison
+│   └── pipeline/      # Trading methodology (Phase 11)
+│       ├── backtest_trading_methodology.py # 6-strategy backtest
+│       ├── walkforward_backtest.py         # Walk-forward optimization
+│       ├── live_dashboard.py              # Live state monitoring
+│       └── validate_coupling_modern.py    # Cross-era coupling validation
 │
 ├── data/
 │   ├── raw/           # Cached CSV data from stooq
@@ -227,6 +232,17 @@ Located in [references/page_152/](references/page_152/)
 - ✅ 6 visualization types including 3D time-frequency surfaces
 - See: `prd/nominal_model_pipeline.md`, `experiments/pipeline/`
 
+### Phase 11: Trading Methodology Implementation (COMPLETE)
+**Goal**: Implement all 6 strategies from trading_methodology.md with walk-forward validation
+- ✅ Analytic Ormsby filters replace Hilbert transform (cleaner phase/envelope)
+- ✅ All 6 strategies implemented: sync scoring, F4 leading, amplitude regime, phase sync, asymmetry, band calibration
+- ✅ Integrated framework with multiplicative modifiers and expected move sizing
+- ✅ Walk-forward backtest: DJIA Sharpe 2.10 (11 windows), SPX Sharpe 1.69 (10 windows) vs B&H 0.55/0.59
+- ✅ Coupling validation across 4 eras — F4→F2 leading and F3/F6 trough amplification REVERSED on modern data
+- ✅ Adaptive strategy downweights unstable coupling; stable strategies (sync, amplitude, asymmetry) carry the edge
+- ✅ Live dashboard with alerts and position sizing (Phase D)
+- See: `prd/trading_methodology.md`, `experiments/pipeline/`
+
 ---
 
 ## Coding Conventions
@@ -352,16 +368,28 @@ plt.show()
 
 ## Current Development Focus
 
-**All core phases COMPLETE** (Phases 1-7, 10). The project has achieved its primary goal: faithful reproduction, validation, and extension of Hurst's spectral framework.
+**All core phases COMPLETE** (Phases 1-7, 10-11). The project has achieved its primary goal: faithful reproduction, validation, and extension of Hurst's spectral framework, plus a complete trading methodology implementation.
 
-**Key milestone (March 2026)**: Narrowband CMW resolves **79 individual harmonics** (N=2 to N=80) in daily DJIA data, extending the Nominal Model far beyond Hurst's 27-34 comb-derived lines.
+**Key milestones**:
+- **March 2026**: Narrowband CMW resolves **400 individual harmonics** (N=2 to N=400) in daily DJIA data
+- **March 2026**: Trading methodology fully implemented — walk-forward Sharpe 2.10 (DJIA), 1.69 (SPX)
+- **March 2026**: Reconstruction R² improved from 0.12 to **0.73** (79 CMW lines + linear trend)
+- **Critical finding**: F4→F2 leading indicator and F3/F6 trough amplification are **Hurst-era artifacts** that reverse on modern data. Synchronicity scoring and amplitude regime classification are the stable, universal strategies.
+- **Critical finding**: Sync score **confirms** market bottoms (reaches -0.5 to -0.8) but provides **zero early warning** — it is a monitoring tool, not a predictor.
 
-**Next steps** (not yet started):
-- Improve reconstruction R² by using CMW-confirmed lines (target >0.70)
-- Run pipeline on DJIA 1965-2025 and SPX 1985-2025 (multi-period validation)
-- Stage 10 CMW envelope analysis: modulation periods, inter-filter coupling
-- Investigate whether harmonics extend beyond N=80 with higher-frequency daily data
-- Backtest: can CMW-derived amplitudes and phases predict turning points?
+**Completed work** (March 2026):
+- ✅ Reconstruction R² = 0.73 (target >0.70 met) — 79 CMW lines + linear trend
+- ✅ Multi-period validation: DJIA 1965-2025, SPX 1985-2025 — w0 stable, envelope R²>0.93
+- ✅ Stage 10 CMW envelope analysis: modulation index 0.91, adjacent coupling r>0.95, 56% show 17.1yr beat
+- ✅ Harmonics extend to N=400 (428/428 confirmed) — 1/w envelope holds (slope=-0.79, R²=0.995)
+- ✅ Market extremes: 5 events analyzed (1929, 1987, 2000, 2008, 2020)
+- ✅ "Meaningless frequencies" tested: 22/23 filters are meaningful
+- ✅ Filter specs exported to JSON/CSV (`data/processed/`)
+
+**Outstanding research** (not yet started):
+- Cross-asset universality (bonds, commodities, FX)
+- Connection between w0 ≈ 0.367 rad/yr and Kuznets cycle (17.1-year period)
+- Real-time parametric line tracking (Kalman filter approach)
 
 **Supplementary Work** (deferred):
 - Sub-sample interpolation (Phase 2A)

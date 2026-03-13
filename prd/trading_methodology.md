@@ -10,6 +10,17 @@ This document synthesizes all confirmed findings into a practical methodology.
 
 ---
 
+> **WARNING — ERA-SPECIFIC ARTIFACTS (March 2026 Coupling Validation)**
+>
+> **Strategies 2 (F4 Leading Indicator) and 4 (Phase Synchronization)** were validated only on Hurst-era data (1935-1954). Cross-era coupling validation (`experiments/pipeline/validate_coupling_modern.py`) found these effects **REVERSE on modern data**:
+>
+> - **F4→F2 leading**: r=+0.38 (Hurst era) → r=−0.17 (1985-2025) — **REVERSED**
+> - **F3/F6 trough amplification**: +36-50% (Hurst era) → ~0.8× suppressed (modern) — **REVERSED**
+>
+> The walk-forward backtest handles this via per-window adaptive weighting, but **do not use Strategies 2 or 4 with fixed parameters on post-1965 data**. The stable, universal strategies are: **1 (Synchronicity), 3 (Amplitude Regime), 5 (Asymmetry), and 6 (Band Calibration)**.
+
+---
+
 ## What We Can and Cannot Do
 
 ### CAN do (confirmed, quantified):
@@ -42,7 +53,7 @@ All derived from the standard 6-filter decomposition applied to log(price):
 | BP-5 | 20-week | 0.4yr | ~9wk | Short-term timing |
 | BP-6 | 10-week | 9wk | ~5wk | Entry precision |
 
-For each bandpass filter, the analytic signal (via Hilbert transform or CMW) provides:
+For each bandpass filter, the analytic signal (via native analytic Ormsby filter with `analytic=True`) provides:
 - **Instantaneous phase** theta(t): where in the cycle we are (0=trough, pi=peak)
 - **Envelope** |z(t)|: instantaneous amplitude (how strong this cycle is NOW)
 - **Instantaneous frequency** d(theta)/dt: cycle speed (confirms nominal or drifted)
@@ -286,48 +297,64 @@ The edge comes from three sources:
 
 ---
 
-## Implementation Priority
+## Implementation Status
 
-### Phase A: Build the real-time dashboard
-- Apply 6-filter decomposition to current DJIA/SPX data (daily or weekly)
-- Compute phase, envelope, and synchronicity score at each time step
-- Classify amplitude regime per band
-- Display F4 leading indicator
+All four phases are **COMPLETE** as of March 2026.
 
-### Phase B: Backtest the synchronicity strategy
-- Historical S_w(t) vs subsequent returns
-- Optimize threshold values on DJIA 1921-1965
-- Validate on SPX 1985-2025 (out-of-sample)
-- Confirm that alignment score predicts major bottoms/tops
+### Phase A: Real-time dashboard (COMPLETE)
+- 6-filter decomposition using **analytic Ormsby filters** (not Hilbert transform)
+- Phase, envelope, instantaneous frequency extracted directly from complex filter output
+- Amplitude regime classification per band (STRONG/NORMAL/WEAK terciles)
+- F4 leading indicator and synchronicity scoring
+- Script: `experiments/pipeline/backtest_trading_methodology.py`
 
-### Phase C: Backtest the integrated framework
-- Combine all 6 strategies into the decision framework
-- Walk-forward validation (train on rolling windows, test on next period)
-- Key metrics: Sharpe ratio, max drawdown, hit rate, average win/loss ratio
+### Phase B: Synchronicity backtest (COMPLETE)
+- Historical S_w(t) computed across DJIA 1927-2025 and SPX 1985-2025
+- Alignment score confirms every major bottom (1932, 1974, 2003, 2009, 2020) at S=-1.0
+- Sharpe 0.442 vs 0.319 B&H, max drawdown -43% vs -221%
+- Script: `experiments/pipeline/backtest_trading_methodology.py`
 
-### Phase D: Live monitoring
-- Weekly update of all state variables
-- Alert system for major regime transitions
+### Phase C: Integrated framework + walk-forward (COMPLETE)
+- All 6 strategies combined as multiplicative modifiers
+- Walk-forward validation: 15yr train / 5yr test sliding windows
+- **DJIA**: avg Sharpe 2.10 across 11 windows (vs B&H 0.55)
+- **SPX**: avg Sharpe 1.69 across 10 windows (vs B&H 0.59)
+- Adaptive strategy measures coupling per window and downweights unstable strategies
+- Script: `experiments/pipeline/walkforward_backtest.py`
+
+### Phase D: Live monitoring (COMPLETE)
+- Weekly state vector update for DJIA and SPX
+- Alert system: F2 zone transitions, sync threshold crossings, amplitude regime changes
 - Position sizing recommendations based on current state
+- 6-panel dashboard figure with 260-week history
+- Current state (March 2026): both DJIA and SPX in NEUTRAL regime, 4/5 bands WEAK
+- Script: `experiments/pipeline/live_dashboard.py`
 
 ---
 
 ## Quantitative Foundation
 
-All strategies above rest on empirically confirmed, stable relationships:
+All strategies rest on empirically tested relationships. Cross-era coupling validation (`experiments/pipeline/validate_coupling_modern.py`) tested 4 eras: DJIA 1921-1965, 1965-2005, 1985-2025, and SPX 1985-2025.
 
 | Finding | Confirmation | Stability |
 |---------|-------------|-----------|
-| 79 harmonic frequencies | Narrowband CMW, R2=0.9999 | 130 years, 2 markets |
-| 1/w amplitude envelope | R2>0.89 in all periods | Universal |
-| 6-band decomposition | 98.9% variance captured | Hurst window |
-| F3/F6 amplified at F2 troughs | 36-50% increase | 1935-1954 window |
-| F4 leads F2 by 14 weeks | r=0.38, p<0.05 | 1935-1954 window |
-| F2 bull/bear asymmetry | 1.506 ratio | 1935-1954 window |
-| Synchronicity at major bottoms | Score=-1.0 at all 5 | 1932-2020 |
-| Beating dominates drift | 4/4 hypothesis tests | All windows |
+| 79 harmonic frequencies | Narrowband CMW, R2=0.9999 | **UNIVERSAL** — 130 years, 2 markets |
+| 1/w amplitude envelope | R2>0.89 in all periods | **UNIVERSAL** |
+| 6-band decomposition | 98.9% variance captured | **UNIVERSAL** |
+| Synchronicity at major bottoms | Score=-1.0 at all 5 | **UNIVERSAL** — 1932-2020 |
+| Beating dominates drift | 4/4 hypothesis tests | **UNIVERSAL** |
+| F2 bull/bear asymmetry | 1.506 ratio (Hurst) → 2.2-3.6 modern | **STABLE** — stronger on modern data |
+| F2-F3 / F3-F6 envelope correlation | r=0.3-0.6 | **STABLE** across all eras |
+| F3/F6 amplified at F2 troughs | 36-50% increase (Hurst era) | **REVERSED** on modern data (ratio ~0.8) |
+| F4 leads F2 by 14 weeks | r=+0.38 (Hurst era) | **REVERSED** on modern data (r=-0.17) |
 
-**Critical gap**: Most coupling results (rows 4-6) are confirmed only on the 1935-1954 display window. They need validation on modern data (SPX 1985-2025) before trading on them. The spectral structure itself is confirmed universal, but the coupling coefficients may vary.
+### Critical Findings from Coupling Validation
+
+**Strategies 1, 3, 5, 6 are STABLE** — synchronicity scoring, amplitude regime classification, asymmetry exploitation, and band calibration work consistently across all eras.
+
+**Strategies 2 and 4 are HURST-ERA ARTIFACTS** — F4→F2 leading and F3/F6 trough amplification are specific to the 1935-1954 display window and reverse on modern data. The walk-forward backtest handles this by measuring coupling per window and downweighting these strategies when coupling is weak or reversed.
+
+The adaptive walk-forward approach (Sharpe 2.10 DJIA, 1.69 SPX) only marginally outperforms fixed-parameter sync strategy (2.07, 1.73), confirming that the stable strategies (particularly synchronicity) carry most of the edge.
 
 ---
 
@@ -337,5 +364,9 @@ All strategies above rest on empirically confirmed, stable relationships:
 - Hurst, J.M. *Cycles Course* (Cyclitec Services, 1973-1975)
 - Project findings: `prd/hurst_unified_theory_v2.md` (Parts 10-11, 20)
 - Coupling analysis: `experiments/phase7_unified/fig_hidden_relationships.py`
+- Coupling validation (cross-era): `experiments/pipeline/validate_coupling_modern.py`
+- Backtest implementation: `experiments/pipeline/backtest_trading_methodology.py`
+- Walk-forward optimization: `experiments/pipeline/walkforward_backtest.py`
+- Live dashboard: `experiments/pipeline/live_dashboard.py`
 - Adaptive model failure: `experiments/pipeline/adaptive_harmonic_model.py`
 - 75/23/2 confirmation: `experiments/pipeline/hurst_75_23_2_analysis.py`

@@ -91,17 +91,17 @@ Instead of Hurst's 23-filter Ormsby comb bank (each seeing 2-3 harmonics), we us
 
 | Metric | Hurst (1970) | This project |
 |--------|-------------|--------------|
-| Method | 23 Ormsby comb filters | 79 narrowband CMW filters |
-| Frequency range | 7-12 rad/yr | 0.7-29 rad/yr |
-| Lines resolved | 27-34 | **79** (N=2 to N=80) |
-| Shortest period | ~27 weeks | **11.4 weeks** |
+| Method | 23 Ormsby comb filters | 400 narrowband CMW filters |
+| Frequency range | 7-12 rad/yr | 0.7-143 rad/yr |
+| Lines resolved | 27-34 | **400** (N=2 to N=400) |
+| Shortest period | ~27 weeks | **2.3 weeks** (16 days) |
 | Beating artifacts | Ubiquitous | **Eliminated** |
 | Phase output | Zero-crossing measurement | **Direct analytic signal** |
 | Envelope | Rectification + smoothing | **|z(t)|, no smoothing needed** |
 
-### Key finding: The spectrum is discrete to at least N=80
+### Key finding: The spectrum is discrete to at least N=400
 
-A central open question was whether the spectrum becomes continuous at high frequencies. **It does not.** Individual harmonics persist at least to 11-week periods, extending the Nominal Model from Hurst's 27 lines to a 79-line model.
+A central open question was whether the spectrum becomes continuous at high frequencies. **It does not.** Individual harmonics persist to approximately 2.3-week periods (N=400, 428/428 confirmed), extending the Nominal Model from Hurst's 27 lines to a 400-line model. The 1/w envelope holds with slope=-0.79 (R²=0.995).
 
 ### FWHM factor trade-off
 
@@ -151,7 +151,7 @@ If all three agree within 10%, confidence is "high". The pipeline found 0.3572 f
 | Test | Result | Pass? |
 |------|--------|-------|
 | Spectral consistency (nominal vs Fourier) | 100% | ✅ |
-| Reconstruction R² | 0.12 | ❌ (needs more lines) |
+| Reconstruction R² | 0.73 | ✅ (79 CMW lines + trend) |
 | Cycle counting | 16 lines OK | ✅ |
 | Envelope 1/w fit | R² = 0.93 | ✅ |
 

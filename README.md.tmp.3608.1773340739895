@@ -155,7 +155,7 @@ hurst-analysis2/
 | 5. Extensions | COMPLETE | CMW scalograms, ridge detection, beating hypothesis (4/4 confirmed) |
 | 6. Modern Validation | COMPLETE | Harmonic structure confirmed across 130 years, 2 indices, daily & weekly |
 | 7. Unified Theory | COMPLETE | Full derivation chain documented; 1/ω envelope explained by 3 mechanisms |
-| 10. Automated Pipeline | COMPLETE | Narrowband CMW resolves **400 individual harmonics** (N=2-400) in daily data, R²=0.73 |
+| 10. Automated Pipeline | COMPLETE | Narrowband CMW resolves **79 individual harmonics** (N=2-80) in daily data |
 | 11. Trading Methodology | COMPLETE | Walk-forward Sharpe 2.10 (DJIA), 1.69 (SPX) vs B&H 0.55/0.59 |
 
 ---
