@@ -5,3 +5,5 @@ __pycache__/
 
 # Data artifacts (keep raw CSVs tracked if intentional)
 data/processed/
+
+nul
